@@ -1,0 +1,7 @@
+<map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
+<area shape="rect" id="Node000000" href="$classISendMessage.html" title=" " alt="" coords="5,31,121,56"/>
+<area shape="rect" id="Node000001" href="$classSendToOne.html" title=" " alt="" coords="181,5,275,31"/>
+<area shape="poly" id="edge2_Node000000_Node000001" title=" " alt="" coords="135,30,180,23,181,28,135,35"/>
+<area shape="rect" id="Node000002" href="$classSendToSeveral.html" title=" " alt="" coords="169,55,287,80"/>
+<area shape="poly" id="edge3_Node000000_Node000002" title=" " alt="" coords="136,51,169,56,169,61,135,56"/>
+</map>
