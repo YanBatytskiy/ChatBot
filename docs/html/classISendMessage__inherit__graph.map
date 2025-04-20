@@ -1,7 +1,0 @@
-<map id="ISendMessage" name="ISendMessage">
-<area shape="rect" id="Node000001" title=" " alt="" coords="60,5,176,31"/>
-<area shape="rect" id="Node000002" href="$classSendToOne.html" title=" " alt="" coords="5,79,100,104"/>
-<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="100,43,65,80,61,77,96,39"/>
-<area shape="rect" id="Node000003" href="$classSendToSeveral.html" title=" " alt="" coords="125,79,242,104"/>
-<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="140,39,175,77,171,80,136,43"/>
-</map>
