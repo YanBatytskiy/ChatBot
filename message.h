@@ -53,10 +53,13 @@ public:
 
   // setters
   // add message
-  void
-  addContent(const std::shared_ptr<IMessageContent> &content) {_content.push_back(content);}
+  void addContent(const std::shared_ptr<IMessageContent> &content) {
+    _content.push_back(content);
+  }
 
   // delete message will be realized further
 
   // edit message will be realized further
+
+  void printMessage() {}; // will be realized further
 };

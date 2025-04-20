@@ -8,7 +8,7 @@ private:
   std::vector<std::shared_ptr<Message>> _messages;
 
 public:
-  // without constructor and destructor becouse vector has own ones
+  virtual ~Chat() = default;
 
   // add message to chat
   void addMessage(const std::shared_ptr<Message> &message) {
