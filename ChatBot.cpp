@@ -26,7 +26,8 @@ int main() {
   recipients.push_back(user2_ptr);
   recipients.push_back(user3_ptr);
 
-  // задаем текст сообщения через переменную
+  // qqq
+  //  задаем текст сообщения через переменную
   std::string text_tmp = "Тестовое сообщение";
 
   // создаем объект структуры под тип текст
