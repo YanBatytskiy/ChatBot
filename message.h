@@ -1,5 +1,5 @@
 #pragma once
-#include "messageContent.h"
+#include "message_content.h"
 #include "user.h"
 #include <memory>
 #include <string>
@@ -24,7 +24,7 @@ public:
           const std::shared_ptr<User> &sender,
           const std::vector<std::shared_ptr<User>> &recipients)
       : _content(content), _sender(sender), _recipients(recipients),
-        _time_stamp("will be realized further") {}
+        _time_stamp("вторник 22-апр 2025.") {}
 
   ~Message() override = default; // destructor
 
@@ -52,7 +52,7 @@ public:
   const std::string &getTimeStamp() const { return _time_stamp; }
 
   // setters
-  // add message
+  // add content to the message
   void addContent(const std::shared_ptr<IMessageContent> &content) {
     _content.push_back(content);
   }
