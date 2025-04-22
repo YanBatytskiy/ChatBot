@@ -24,5 +24,8 @@ public:
   const std::vector<std::shared_ptr<Message>> &getMessages() const;
 
   // get participients of the chat
-  const std::vector<std::weak_ptr<User>>& getParticipients() const;
+  const std::vector<std::weak_ptr<User>> &getParticipients() const;
+
+  // print full chat
+  void printChat(const std::shared_ptr<User>& currentUser);
 };

@@ -1,4 +1,5 @@
 #include "chat.h"
+#include <iterator>
 
 Chat::Chat(const std::vector<std::weak_ptr<User>> &participients)
     : _participients(participients) {
@@ -16,6 +17,13 @@ const std::vector<std::shared_ptr<Message>> &Chat::getMessages() const {
 }
 
 // get participients of the chat
-const std::vector<std::weak_ptr<User>>& Chat::getParticipients() const {
+const std::vector<std::weak_ptr<User>> &Chat::getParticipients() const {
   return _participients;
 }
+
+// print full chat
+void Chat::printChat(const std::shared_ptr<User> &currentUser) {
+  for (const auto &message : _messages) {
+    message->printMessage(currentUser);
+  }
+};

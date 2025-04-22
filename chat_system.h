@@ -12,7 +12,7 @@ private:
 public:
   // constructors
   ChatSystem();
-  ~ChatSystem();
+  ~ChatSystem() = default;
 
   // getters
   const std::vector<std::shared_ptr<User>> &getUsers() const;

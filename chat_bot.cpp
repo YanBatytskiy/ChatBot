@@ -97,14 +97,20 @@ int main() {
   // включен в класс Chat
   Message message1(messageContent, user1_ptr);
   std::shared_ptr<Message> message1_ptr = std::make_shared<Message>(message1);
+  Message message2(messageContent, user2_ptr);
+  std::shared_ptr<Message> message2_ptr = std::make_shared<Message>(message2);
 
   // добавляем сообщение в активный чат
   activeChat_ptr->addMessage(message1_ptr);
+  activeChat_ptr->addMessage(message2_ptr);
 
   // добавляем новый чат в список чатов каждого пользователя
   user1_ptr->getUserChatList()->addChat(activeChat_ptr);
   user2_ptr->getUserChatList()->addChat(activeChat_ptr);
   user3_ptr->getUserChatList()->addChat(activeChat_ptr);
+
+  //   message1_ptr->printMessage(activeUser_ptr);
+  activeChat_ptr->printChat(activeUser_ptr);
 
   std::cout << std::endl;
   return 0;
