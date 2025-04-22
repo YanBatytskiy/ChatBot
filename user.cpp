@@ -8,8 +8,8 @@ User::User(const std::string &login, const std::string &userName,
            const std::string &password)
     : _login(login), _userName(userName), _password(password) {}
 
-void User::initChats(const std::shared_ptr<UserChatList> &chats) {
-  _chats = chats;
+void User::createChatList(const std::shared_ptr<UserChatList> &userChats) {
+  _userChats = userChats;
 };
 
 // getters
@@ -21,7 +21,9 @@ std::string User::getPassword() const { return _password; }
 void User::setLogin(const std::string &login) { _login = login; }
 void User::setUserName(const std::string &userName) { _userName = userName; }
 void User::setPassword(const std::string &password) { _password = password; }
-std::shared_ptr<UserChatList> User::getUserChatList() const { return _chats; }
+std::shared_ptr<UserChatList> User::getUserChatList() const {
+  return _userChats;
+}
 
 // additional methods
 bool User::checkPassword(const std::string &password) const {

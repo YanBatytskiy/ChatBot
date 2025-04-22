@@ -1,4 +1,5 @@
 #include "chat.h"
+#include "chat_system.h"
 #include "message.h"
 #include "message_content.h"
 #include "message_content_struct.h"
@@ -9,57 +10,63 @@
 #include <vector>
 
 int main() {
-  User user1("Yan", "Yan2201", "12345");
-  User user2("Elena", "Ek", "12345");
-  User user3("Sergei", "Sg", "12345");
-  user1.showUserData();
-  user2.showUserData();
-  user3.showUserData();
+
+  // создаем ChatSystem
+  ChatSystem chatSystem;
 
   // проверка системы сообщений
   // создаем умный указатель на пользователей
-  std::shared_ptr<User> user1_ptr = std::make_shared<User>(user1);
-  std::shared_ptr<User> user2_ptr = std::make_shared<User>(user2);
-  std::shared_ptr<User> user3_ptr = std::make_shared<User>(user3);
+  auto user1_ptr = std::make_shared<User>("Yan", "Yan2201", "12345");
+  auto user2_ptr = std::make_shared<User>("Elena", "Ek", "12345");
+  auto user3_ptr = std::make_shared<User>("Sergei", "Sg", "12345");
+  user1_ptr->showUserData();
+  user2_ptr->showUserData();
+  user3_ptr->showUserData();
 
-  // создаем вектор умных указателей на получателей - user2 и user3
-  std::vector<std::shared_ptr<User>> recipients;
-  recipients.push_back(user2_ptr);
-  recipients.push_back(user3_ptr);
+  auto activeUser_ptr = user1_ptr; // назначаем юзера, который сейчас в системе
+
+  // добавляем пользователей в систему
+  chatSystem.addUser(user1_ptr);
+  chatSystem.addUser(user2_ptr);
+  chatSystem.addUser(user3_ptr);
 
   // создаем список чатов UserChatList для каждого пользователя. Мы создвем и
   // привязываем список чатов при регистрации пользователя
-  UserChatList user1_ChatsList(user1_ptr);
-  UserChatList user2_ChatsList(user2_ptr);
-  UserChatList user3_ChatsList(user3_ptr);
-
-  std::shared_ptr<UserChatList> user1_ChatsList_ptr =
-      std::make_shared<UserChatList>(user1_ChatsList);
-  std::shared_ptr<UserChatList> user2_ChatsList_ptr =
-      std::make_shared<UserChatList>(user1_ChatsList);
-  std::shared_ptr<UserChatList> user3_ChatsList_ptr =
-      std::make_shared<UserChatList>(user1_ChatsList);
+  std::shared_ptr<UserChatList> user1_ChatList_ptr =
+      std::make_shared<UserChatList>(user1_ptr);
+  std::shared_ptr<UserChatList> user2_ChatList_ptr =
+      std::make_shared<UserChatList>(user2_ptr);
+  std::shared_ptr<UserChatList> user3_ChatList_ptr =
+      std::make_shared<UserChatList>(user3_ptr);
 
   // привязываем список чатов к юзеру
-  user1.initChats(user1_ChatsList_ptr);
-  user1.initChats(user2_ChatsList_ptr);
-  user1.initChats(user3_ChatsList_ptr);
+  user1_ptr->createChatList(user1_ChatList_ptr);
+  user2_ptr->createChatList(user2_ChatList_ptr);
+  user3_ptr->createChatList(user3_ChatList_ptr);
+
+  // создаем вектор слабых умных указателей на получателей - user2 и user3 для
+  // формирования сообщения
+  std::vector<std::weak_ptr<User>> recipients;
+  recipients.push_back(user2_ptr);
+  recipients.push_back(user3_ptr);
 
   // создаем вектор участников чата и добавляем туда
   // отправителя, затем получателей
-  std::vector<std::shared_ptr<User>> participients;
-  participients.insert(participients.end(), recipients.begin(),
-                       recipients.end());
+  std::vector<std::weak_ptr<User>> ActiveChatParticipients;
+  ActiveChatParticipients.insert(ActiveChatParticipients.end(),
+                                 recipients.begin(), recipients.end());
 
   // добавляем в список уастников чата активного пользователя
-  participients.push_back(user1_ptr);
+  ActiveChatParticipients.push_back(user1_ptr);
 
   // создаем пустой чат с участниками
   // это тот чат, в котором мы пишем сообщение. Он либо новый либо был выбран
   // существующий
-  Chat activeChat(participients);
 
-  // qqq
+  auto activeChat_ptr = std::make_shared<Chat>(
+      ActiveChatParticipients); // это аналог двух операций но без
+                                // дополнительной
+
   //  задаем текст сообщения через переменную
   std::string text_tmp = "Тестовое сообщение";
 
@@ -88,15 +95,16 @@ int main() {
 
   // теперь создаём объект Message, который, в свою очередь, дальше будет
   // включен в класс Chat
-  Message message1(messageContent, user1_ptr, recipients);
+  Message message1(messageContent, user1_ptr);
   std::shared_ptr<Message> message1_ptr = std::make_shared<Message>(message1);
 
   // добавляем сообщение в активный чат
-  activeChat.addMessage(message1_ptr);
-  std::shared_ptr<Chat> activeChat_ptr = std::make_shared<Chat>(activeChat);
+  activeChat_ptr->addMessage(message1_ptr);
 
   // добавляем новый чат в список чатов каждого пользователя
-  user1.getUserChatList()->addChat(activeChat_ptr);
+  user1_ptr->getUserChatList()->addChat(activeChat_ptr);
+  user2_ptr->getUserChatList()->addChat(activeChat_ptr);
+  user3_ptr->getUserChatList()->addChat(activeChat_ptr);
 
   std::cout << std::endl;
   return 0;

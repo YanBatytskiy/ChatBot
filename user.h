@@ -10,7 +10,7 @@ private:
   std::string _login;
   std::string _userName;
   std::string _password;
-  std::shared_ptr<UserChatList> _chats;
+  std::shared_ptr<UserChatList> _userChats;
 
 public:
   // constructors
@@ -18,7 +18,7 @@ public:
        const std::string &password);
   ~User() = default;
 
-  void initChats(const std::shared_ptr<UserChatList>& chats);
+  void createChatList(const std::shared_ptr<UserChatList> &chats);
 
   // getters
   std::string getLogin() const;
