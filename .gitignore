@@ -1,6 +1,7 @@
 .DS_Store
 # Игнорировать настройки VS Code
 .vscode/
+Vending_Machine/
 docs/
 
 # Игнорировать скомпилированные файлы
