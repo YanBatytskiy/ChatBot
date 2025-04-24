@@ -1,5 +1,6 @@
 #include "chat.h"
-#include <iterator>
+#include <iostream>
+// #include <iterator>
 
 Chat::Chat(const std::vector<std::weak_ptr<User>> &participients)
     : _participients(participients) {
@@ -23,7 +24,10 @@ const std::vector<std::weak_ptr<User>> &Chat::getParticipients() const {
 
 // print full chat
 void Chat::printChat(const std::shared_ptr<User> &currentUser) {
-  for (const auto &message : _messages) {
-    message->printMessage(currentUser);
-  }
+  if (!_messages.empty()) {
+    for (const auto &message : _messages) {
+      message->printMessage(currentUser);
+    }
+  } else
+    std::cout << "Cообщуний нет." << std::endl;
 };

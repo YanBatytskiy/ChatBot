@@ -10,11 +10,12 @@
 #include <vector>
 
 void systemInintTest(ChatSystem &_chatsystem) {
+
   // проверка системы сообщений
   // создаем умный указатель на пользователей
-  auto user1_ptr = std::make_shared<User>("Yan", "Yan2201", "12345");
-  auto user2_ptr = std::make_shared<User>("Elena", "Ek", "12345");
-  auto user3_ptr = std::make_shared<User>("Sergei", "Sg", "12345");
+  auto user1_ptr = std::make_shared<User>("Alex2104", "Sasha", "12345");
+  auto user2_ptr = std::make_shared<User>("Elena1510", "Elena", "12345");
+  auto user3_ptr = std::make_shared<User>("Serg0101", "Sergei", "12345");
   user1_ptr->showUserData();
   user2_ptr->showUserData();
   user3_ptr->showUserData();
@@ -106,5 +107,5 @@ void systemInintTest(ChatSystem &_chatsystem) {
   user3_ptr->getUserChatList()->addChat(activeChat_ptr);
 
   //   message1_ptr->printMessage(activeUser_ptr);
-  activeChat_ptr->printChat(activeUser_ptr);
+  //   activeChat_ptr->printChat(activeUser_ptr);
 };
