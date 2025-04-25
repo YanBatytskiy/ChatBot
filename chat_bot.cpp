@@ -38,8 +38,7 @@ int main() {
       break;
     case 2: { // вход пользователя в систему
               //   if (userLoginInsystem(chatSystem))
-      std::shared_ptr<User> activeUser_ptr =
-          findUserbyLogin("Alex2104", chatSystem);
+      std::shared_ptr<User> activeUser_ptr = findUserbyLogin("Elena1510", chatSystem);
 
       chatSystem.setActiveUser(activeUser_ptr);
       mainhMenu(chatSystem);

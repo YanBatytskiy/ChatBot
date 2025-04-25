@@ -8,7 +8,7 @@ UserChatList::UserChatList(const std::shared_ptr<User> &owner)
 // getters
 std::weak_ptr<User> UserChatList::getOwner() const { return _owner; }
 
-std::vector<std::weak_ptr<Chat>> UserChatList::getChatsList() const {
+std::vector<std::weak_ptr<Chat>> UserChatList::getChatList() const {
   return _chatList;
 }
 std::vector<std::size_t> UserChatList::getLastIndexRead() const {

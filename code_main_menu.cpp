@@ -5,6 +5,8 @@
  * @date 2025
  */
 #include "chat_system.h"
+#include "user.h"
+
 #include <iostream>
 #include <limits>
 
@@ -22,8 +24,7 @@ void mainhMenu(ChatSystem &chatSystem) { // вывод главного меню
   short userChoice;
 
   std::cout << std::endl;
-  std::cout << "Добрый день, пользователь "
-            << chatSystem.getActiveUser()->getUserName() << std::endl;
+  std::cout << "Добрый день, пользователь " << chatSystem.getActiveUser()->getUserName() << std::endl;
   std::cout << "Выберите пункт меню: " << std::endl;
   std::cout << "1 - Создать новый чат" << std::endl;
   std::cout << "2 - Показать список чатов" << std::endl;
@@ -41,8 +42,7 @@ void mainhMenu(ChatSystem &chatSystem) { // вывод главного меню
     }
 
     if (userChoice < 0 && userChoice != 4) {
-      std::cout << "Вы ввели неправильное число. Попробуйте еще раз."
-                << std::endl;
+      std::cout << "Вы ввели неправильное число. Попробуйте еще раз." << std::endl;
       continue;
     }
 
@@ -56,6 +56,8 @@ void mainhMenu(ChatSystem &chatSystem) { // вывод главного меню
     break;
   }
   case 2: {
+    auto activeUser = chatSystem.getActiveUser();
+    activeUser->printChatList(activeUser);
     break;
   }
   case 3: {

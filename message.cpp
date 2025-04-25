@@ -33,8 +33,12 @@ void Message::printMessage(const std::shared_ptr<User> &currentUser) {
   if (!messageDirection) { // income Message
 
     std::cout << "\033[32m"; // red
-    std::cout << "                     -> Входящее от " << currentUser->getUserName() << "    " << _time_stamp
-              << std::endl;
+    auto sender_ptr = _sender.lock();
+    if (sender_ptr) {
+    } else {
+      std::cout << "user уничтожен " << sender_ptr->getLogin() << std::endl;
+    }
+    std::cout << "     -> Входящее от " << sender_ptr->getLogin() << "    " << _time_stamp << std::endl;
 
     for (const auto &content : _content) {
       if (auto textContent = std::dynamic_pointer_cast<MessageContent<TextContent>>(content)) {
@@ -46,7 +50,7 @@ void Message::printMessage(const std::shared_ptr<User> &currentUser) {
   } else {
 
     std::cout << "\033[37m"; // white
-    std::cout << "<- Исходящее: " << _time_stamp << std::endl;
+    std::cout << "<- Исходящее от тебя: " << currentUser->getUserName() << "    " << _time_stamp << std::endl;
 
     for (const auto &content : _content) {
       if (auto textContent = std::dynamic_pointer_cast<MessageContent<TextContent>>(content)) {
