@@ -4,7 +4,7 @@
  * @version 1.0
  * @date 2025
  */
-// #include "code_auth_menu.h"
+#include "chat_system.h"
 #include <iostream>
 #include <limits>
 
@@ -18,11 +18,12 @@
  * - 2 — Вход в чат,
  * - 0 — Завершение программы.
  */
-void mainhMenu() { // вывод главного меню
+void mainhMenu(ChatSystem &chatSystem) { // вывод главного меню
   short userChoice;
 
   std::cout << std::endl;
-  std::cout << "Добрый день, пользователь " << 
+  std::cout << "Добрый день, пользователь "
+            << chatSystem.getActiveUser()->getUserName() << std::endl;
   std::cout << "Выберите пункт меню: " << std::endl;
   std::cout << "1 - Создать новый чат" << std::endl;
   std::cout << "2 - Показать список чатов" << std::endl;

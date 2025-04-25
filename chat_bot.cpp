@@ -20,7 +20,7 @@ int main() {
   ChatSystem chatSystem;
 
   systemInintTest(chatSystem);
-
+ 
   short userChoice;
 
   while (true) {
@@ -37,7 +37,7 @@ int main() {
       break;
     case 2: // вход пользователя в систему
       if (userLoginInsystem(chatSystem))
-        mainhMenu();
+        mainhMenu(chatSystem);
       break;
     default:
       break;

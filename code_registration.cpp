@@ -1,6 +1,6 @@
 /**
  * @file code_registration.cpp
- * @brief Реализация регистрации нового пользователя и проверок ввода.
+ * @brief Реализация регистрации нового пользователя, входа и проверок ввода.
  * @version 1.0
  * @date 2025
  */
@@ -9,47 +9,40 @@
 #include "chat_system.h"
 #include "user.h"
 #include "user_chat_list.h"
+#include <algorithm>
 #include <cctype>
 #include <cstddef>
-#include <cstring>
 #include <exception>
-#include <ios>
 #include <iostream>
 #include <limits>
 #include <memory>
 #include <stdexcept>
+#include <string>
+#include <vector>
 
 /**
- * @brief Проверка корректности ввода логина или пароля.
+ * @brief Проверка логина или пароля по длине и содержанию.
  *
- * Проверяет длину строки, допустимые символы, наличие цифр и заглавных букв для
- * пароля.
- *
- * @param inputData Введённая пользователем строка
- * @param passwordLengthMin Минимальная допустимая длина
- * @param passwordLengthMax Максимальная допустимая длина
- * @param isPassword Флаг: true — проверка пароля, false — проверка логина
+ * @param inputData Введённая строка
+ * @param contentLengthMin Минимальная длина
+ * @param contentLengthMax Максимальная длина
+ * @param isPassword true — если проверяется пароль, false — логин
  * @return true если строка валидна
- * @throws std::invalid_argument при нарушении правил валидации
+ * @throws std::invalid_argument при нарушении условий
  */
-bool checkInputNewData(const std::string &inputData,
-                       std::size_t contentLengthMin,
-                       std::size_t contentLengthMax, bool isPassword) {
-
+bool checkNewDataInputForLimits(const std::string &inputData,
+                                std::size_t contentLengthMin,
+                                std::size_t contentLengthMax, bool isPassword) {
   if (inputData.length() < contentLengthMin ||
       inputData.length() > contentLengthMax) {
-    throw std::invalid_argument(
-        "Некорректное количество символов. Попробуйте еще раз.");
+    throw std::invalid_argument("Некорректное количество символов.");
   }
 
-  bool isCapital = false;
-  bool isNumber = false;
-  //   char wrongChar;
+  bool isCapital = false, isNumber = false;
 
-  for (const char &ch : inputData) {
+  for (char ch : inputData) {
     if (!std::isalnum(ch)) {
-      //   wrongChar = ch;
-      throw std::invalid_argument("Должны быть только буквы и цифры. Символ '" +
+      throw std::invalid_argument("Недопустимый символ: '" +
                                   std::string(1, ch) + "'");
     }
     if (std::isdigit(ch))
@@ -58,212 +51,200 @@ bool checkInputNewData(const std::string &inputData,
       isCapital = true;
   }
 
-  if (!isCapital && isPassword) {
-    throw std::invalid_argument(
-        "Должна быть минимум одна заглавная буква. Попробуйте еще раз:");
-  }
-  if (!isNumber && isPassword) {
-    throw std::invalid_argument(
-        "Должна быть минимум одна цифра. Попробуйте еще раз:");
+  if (isPassword) {
+    if (!isCapital)
+      throw std::invalid_argument("Требуется заглавная буква.");
+    if (!isNumber)
+      throw std::invalid_argument("Требуется цифра.");
   }
 
   return true;
 }
 
 /**
- * @brief Проверка пользовательского ввода с повторным запросом до успешного
- * ввода.
+ * @brief Получает и валидирует ввод пользователя.
  *
- * Выводит сообщение, получает строку с клавиатуры и валидирует её.
- *
- * @param prompt Сообщение пользователю
- * @param passwordLengthMin Минимальная длина
- * @param passwordLengthMax Максимальная длина
- * @param isPassword Является ли это вводом пароля
+ * @param prompt Текст подсказки
+ * @param dataLengthMin Минимальная длина
+ * @param dataLengthMax Максимальная длина
+ * @param isPassword Является ли ввод паролем
+ * @param userData Данные, к которым применяется проверка (используется для
+ * сравнения или заполнения)
+ * @param newUserData true — вводится новый пользователь
+ * @param chatSystem Система чатов для валидации данных
+ * @return std::string валидированная строка или "0" для выхода
  */
-void inputDataValidation(const std::string &prompt,
-                         std::size_t passwordLengthMin,
-                         std::size_t passwordLengthMax, bool isPassword,
-                         std::string &userData, bool newUserData,
-                         const ChatSystem &chatSystem) {
-
+std::string inputDataValidation(const std::string &prompt,
+                                std::size_t dataLengthMin,
+                                std::size_t dataLengthMax, bool isPassword,
+                                UserData userData, bool newUserData,
+                                const ChatSystem &chatSystem) {
   std::cout << prompt << std::endl;
+  std::string inputData;
 
   while (true) {
+    std::getline(std::cin, inputData);
+    if (inputData.empty()) {
+      std::cerr << "Вы ничего не ввели.\n";
+      continue;
+    }
+    if (inputData == "0")
+      return inputData;
+
     try {
-      std::string inputData;
-      if (!std::getline(std::cin, inputData)) {
-        continue;
-      };
-      if (inputData.empty()) {
-        std::cerr << "Вы ничего не ввели. Попробуйте еще раз." << std::endl;
-        continue;
-      }
-      if (inputData == "0") {
-        userData = inputData;
-        break;
-      }
-
       if (newUserData) {
-
-        checkInputNewData(inputData, passwordLengthMin, passwordLengthMax,
-                          isPassword);
-        userData = inputData;
-        break;
-      } else {
-        if (!isPassword &&
-            !checkIsUserDataInSystem(inputData, chatSystem, false)) {
-          std::cerr << "Вы ввели неправильный логин. Попробуйте другой."
-                    << std::endl;
-          continue;
-        } else if (isPassword &&
-                   !checkIsUserDataInSystem(inputData, chatSystem, true)) {
-          std::cerr << "Вы ввели неправильный пароль. Попробуйте другой."
-                    << std::endl;
-          continue;
-        } else
-          userData = inputData;
-        break;
-        break;
+        checkNewDataInputForLimits(inputData, dataLengthMin, dataLengthMax,
+                                   isPassword);
       }
+      return inputData;
     } catch (const std::exception &ex) {
       std::cerr << ex.what() << std::endl;
     }
   }
 }
 
-bool checkIsUserDataInSystem(const std::string &userData,
-                             const ChatSystem &chatSystem, bool password) {
-  if (!password) {
-    for (const auto &user : chatSystem.getUsers()) {
-      if (user->getLogin() == userData) {
-        return true;
-      }
-    }
-  } else {
-    for (const auto &user : chatSystem.getUsers()) {
-      if (user->getPassword() == userData) {
-        return true;
-      }
-    }
-  }
-  return false;
-  ;
-};
+/**
+ * @brief Поиск пользователя по логину.
+ */
+std::shared_ptr<User> findUserbyLogin(const std::string &userLogin,
+                                      const ChatSystem &chatSystem) {
+  const auto &users = chatSystem.getUsers();
+  auto it = std::find_if(users.begin(), users.end(),
+                         [&](const std::shared_ptr<User> &u) {
+                           return u->getLogin() == userLogin;
+                         });
+  return (it != users.end()) ? *it : nullptr;
+}
 
 /**
- * @brief Запрашивает у пользователя новый логин и валидирует его.
+ * @brief Проверяет наличие логина в системе.
  */
-void inputNewLogin(std::string &login, const ChatSystem &chatSystem) {
-  std::cin.clear();
+const std::shared_ptr<User> checkLoginExists(const std::string &login,
+                                             const ChatSystem &chatSystem) {
+  for (const auto &user : chatSystem.getUsers()) {
+    if (user->getLogin() == login)
+      return user;
+  }
+  return nullptr;
+}
+
+/**
+ * @brief Проверка пароля для заданного логина.
+ */
+bool checkPasswordValidForUser(const UserData &userData,
+                               const ChatSystem &chatSystem) {
+  auto user = findUserbyLogin(userData._login, chatSystem);
+  return user && userData._password == user->getPassword();
+}
+
+/**
+ * @brief Ввод и проверка логина пользователя.
+ */
+void inputNewLogin(UserData &userData, const ChatSystem &chatSystem) {
   std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-
   while (true) {
-    inputDataValidation(
-        "Введите новый Логин либо 0 для выхода в предыдущее меню. Логин не "
-        "менее 5 "
-        "символов и не более 20 символов (можно использовать только латинские "
-        "буквы и цифры) - ",
-        5, 20, false, login, true, chatSystem);
+    std::string newLogin =
+        inputDataValidation("Введите логин (или 0 для выхода):", 5, 20, false,
+                            userData, true, chatSystem);
 
-    if (login == "0") {
-      break;
-    };
-    if (checkIsUserDataInSystem(login, chatSystem, false)) {
-      std::cerr << "Логин уже занят. Попробуйте другой." << std::endl;
+    if (newLogin == "0")
+      return;
+    if (checkLoginExists(newLogin, chatSystem)) {
+      std::cerr << "Логин уже занят.\n";
       continue;
-    } else
-      break;
+    }
+
+    userData._login = newLogin;
+    return;
   }
 }
 
 /**
- * @brief Запрашивает у пользователя новый пароль и валидирует его.
+ * @brief Ввод и проверка пароля пользователя.
  */
-void inputNewPassword(std::string &password, const ChatSystem &chatSystem) {
-
-  inputDataValidation(
-      "Введите новый Пароль либо 0 для выхода в предыдущее меню. Пароль не "
-      "менее 5 символов и не более 10, "
-      "обязательно использовать минимум одну заглавную букву и одну цифру "
-      "(можно использовать только латинские буквы и цифры) - ",
-      5, 10, true, password, true, chatSystem);
-}
-/**
- * @brief Запрашивает у пользователя нновое имя проверяет его.
- */
-void inputNewName(std::string &name, const ChatSystem &chatSystem) {
-  inputDataValidation(
-      "Введите желаемое Имя для отображения, не менее 3 символов и не более "
-      "10, (можно использовать только латинские буквы и цифры) - ",
-      3, 10, false, name, true, chatSystem);
+void inputNewPassword(UserData &userData, const ChatSystem &chatSystem) {
+  std::string newPassword =
+      inputDataValidation("Введите пароль (или 0 для выхода):", 5, 10, true,
+                          userData, true, chatSystem);
+  if (newPassword != "0")
+    userData._password = newPassword;
 }
 
 /**
- * @brief Основная функция регистрации нового пользователя.
- *
- * Выводит вступительное сообщение, затем вызывает функции для получения логина
- * и пароля.
+ * @brief Ввод и проверка имени пользователя.
+ */
+void inputNewName(UserData &userData, const ChatSystem &chatSystem) {
+  std::string newName =
+      inputDataValidation("Введите имя (или 0 для выхода):", 3, 10, false,
+                          userData, true, chatSystem);
+  if (newName != "0")
+    userData._name = newName;
+}
+
+/**
+ * @brief Регистрация нового пользователя.
  */
 void userRegistration(ChatSystem &chatSystem) {
-  std::cout << "Регистрация нового пользователя." << std::endl;
-
+  std::cout << "Регистрация нового пользователя.\n";
   UserData userData;
 
-  inputNewLogin(userData._login, chatSystem);
-  if (userData._login == "0")
+  inputNewLogin(userData, chatSystem);
+  if (userData._login.empty())
     return;
-  ;
-  inputNewPassword(userData._password, chatSystem);
-  if (userData._password == "0")
+
+  inputNewPassword(userData, chatSystem);
+  if (userData._password.empty())
     return;
-  ;
-  inputNewName(userData._name, chatSystem);
-  if (userData._name == "0")
+
+  inputNewName(userData, chatSystem);
+  if (userData._name.empty())
     return;
-  ;
 
-  //   userData._login = "Yan2201";
-  //   userData._password = "qwert54S";
-  //   userData._name = "Yan";
-
-  // сначала делаем указатель на нового юзера
-  auto newUser_ptr = std::make_shared<User>(userData._login, userData._name,
-                                            userData._password);
-
-  // добавляем пользователя в систему
-  chatSystem.addUser(newUser_ptr);
-
-  // устанавливаем активного пользователя в системе
-  chatSystem.setActiveUser(newUser_ptr);
-
-  chatSystem.getActiveUser()->showUserData();
-
-  // создаем список чатов UserChatList и привязываем UserChatList к новому
-  // пользователю
-  newUser_ptr->createChatList(std::make_shared<UserChatList>(newUser_ptr));
+  auto newUser = std::make_shared<User>(userData._login, userData._name,
+                                        userData._password);
+  chatSystem.addUser(newUser);
+  chatSystem.setActiveUser(newUser);
+  newUser->showUserData();
+  newUser->createChatList(std::make_shared<UserChatList>(newUser));
 }
 
+/**
+ * @brief Авторизация пользователя в системе.
+ *
+ * @param chatSystem Система чатов
+ * @return true если авторизация прошла успешно
+ */
 bool userLoginInsystem(ChatSystem &chatSystem) {
-
-  std::cin.clear();
+  UserData userData;
   std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 
-  UserData userData;
+  // логин
+  while (true) {
+    userData._login =
+        inputDataValidation("Введите логин (или 0 для выхода):", 0, 0, false,
+                            userData, false, chatSystem);
+    if (userData._login == "0")
+      return false;
 
-  inputDataValidation("Введите Ваш логин, либо 0 для выхода: ", 0, 0, false,
-                      userData._login, false, chatSystem);
-
-  if (userData._login == "0")
+    if (!checkLoginExists(userData._login, chatSystem)) {
+      std::cerr << "Такой логин не найден.\n";
+      continue;
+    }
+    break;
+  }
+  // пароль
+  userData._password =
+      inputDataValidation("Введите пароль (или 0 для выхода):", 0, 0, true,
+                          userData, false, chatSystem);
+  if (userData._password == "0")
     return false;
-  else {
+
+  if (!checkPasswordValidForUser(userData, chatSystem)) {
+    std::cerr << "Неверный пароль.\n";
+    return false;
   }
 
-  inputDataValidation("Введите Ваш пароль, либо 0 для выхода: ", 0, 0, true,
-                      userData._password, false, chatSystem);
-
-  if (userData._login == "0")
-    return false;
-  else
-    return true;
-};
+  auto user = findUserbyLogin(userData._login, chatSystem);
+  chatSystem.setActiveUser(user);
+  return true;
+}

@@ -20,5 +20,6 @@
   * - 2 — Вход в Чат
   * - 0 — Завершение программы
   */
- void mainhMenu(); // вывод главного меню
+  #include "chat_system.h"
+void mainhMenu(ChatSystem& chatSystem); // вывод главного меню
  
