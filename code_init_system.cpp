@@ -6,106 +6,136 @@
 #include "user.h"
 #include "user_chat_list.h"
 
+#include <iostream>
 #include <memory>
 #include <vector>
 
-void systemInintTest(ChatSystem &_chatsystem) {
+InitDataArray::InitDataArray(std::string messageText, std::string timeStamp, std::shared_ptr<User> sender,
+                             std::vector<std::shared_ptr<User>> _recipients)
+    : _messageText(messageText), _timeStamp(timeStamp), _sender(sender), _recipients(_recipients) {}
+
+void systemInitTest(ChatSystem &_chatsystem) {
 
   // проверка системы сообщений
   // создаем умный указатель на пользователей
-  auto user1_ptr = std::make_shared<User>("Alex2104", "Sasha", "12345");
-  auto user2_ptr = std::make_shared<User>("Elena1510", "Elena", "12345");
-  auto user3_ptr = std::make_shared<User>("Serg0101", "Sergei", "12345");
-  user1_ptr->showUserData();
-  user2_ptr->showUserData();
-  user3_ptr->showUserData();
+  auto Alex2104_ptr = std::make_shared<User>("Alex2104", "Sasha", "12345");
+  auto Elena1510_ptr = std::make_shared<User>("Elena1510", "Elena", "12345");
+  auto Serg0101_ptr = std::make_shared<User>("Serg0101", "Sergei", "12345");
+  auto Vit2504_ptr = std::make_shared<User>("Vit 2504", "Vitaliy", "12345");
 
-  auto activeUser_ptr = user1_ptr; // назначаем юзера, который сейчас в системе
+  Alex2104_ptr->showUserData();
+  Elena1510_ptr->showUserData();
+  Serg0101_ptr->showUserData();
+  Vit2504_ptr->showUserData();
 
   // добавляем пользователей в систему
-  _chatsystem.addUser(user1_ptr);
-  _chatsystem.addUser(user2_ptr);
-  _chatsystem.addUser(user3_ptr);
+  _chatsystem.addUser(Alex2104_ptr);
+  _chatsystem.addUser(Elena1510_ptr);
+  _chatsystem.addUser(Serg0101_ptr);
+  _chatsystem.addUser(Vit2504_ptr);
 
-  // создаем список чатов UserChatList для каждого пользователя. Мы создвем и
-  // привязываем список чатов при регистрации пользователя
-  std::shared_ptr<UserChatList> user1_ChatList_ptr =
-      std::make_shared<UserChatList>(user1_ptr);
-  std::shared_ptr<UserChatList> user2_ChatList_ptr =
-      std::make_shared<UserChatList>(user2_ptr);
-  std::shared_ptr<UserChatList> user3_ChatList_ptr =
-      std::make_shared<UserChatList>(user3_ptr);
+  // создаем список чатов UserChatList для каждого
+  // пользователя. Мы создвем и привязываем список
+  // чатов при регистрации пользователя
+  std::shared_ptr<UserChatList> Alex2104_ChatList_ptr = std::make_shared<UserChatList>(Alex2104_ptr);
+  std::shared_ptr<UserChatList> Elena1510_ChatList_ptr = std::make_shared<UserChatList>(Elena1510_ptr);
+  std::shared_ptr<UserChatList> Serg0101_ChatList_ptr = std::make_shared<UserChatList>(Serg0101_ptr);
+  std::shared_ptr<UserChatList> Vit2504_ChatList_ptr = std::make_shared<UserChatList>(Vit2504_ptr);
 
   // привязываем список чатов к юзеру
-  user1_ptr->createChatList(user1_ChatList_ptr);
-  user2_ptr->createChatList(user2_ChatList_ptr);
-  user3_ptr->createChatList(user3_ChatList_ptr);
+  Alex2104_ptr->createChatList(Alex2104_ChatList_ptr);
+  Elena1510_ptr->createChatList(Elena1510_ChatList_ptr);
+  Serg0101_ptr->createChatList(Serg0101_ChatList_ptr);
+  Vit2504_ptr->createChatList(Vit2504_ChatList_ptr);
 
-  // создаем вектор слабых умных указателей на получателей - user2 и user3 для
-  // формирования сообщения
-  std::vector<std::weak_ptr<User>> recipients;
-  recipients.push_back(user2_ptr);
-  recipients.push_back(user3_ptr);
+  /*
+   *
+   *
+   *
+   *
+   */
 
-  // создаем вектор участников чата и добавляем туда
-  // отправителя, затем получателей
-  std::vector<std::weak_ptr<User>> ActiveChatParticipients;
-  ActiveChatParticipients.insert(ActiveChatParticipients.end(),
-                                 recipients.begin(), recipients.end());
+  // создаем историю сообщений
+  // Sasha - Elena - чат Один с Одним
 
-  // добавляем в список уастников чата активного пользователя
-  ActiveChatParticipients.push_back(user1_ptr);
+  std::vector<std::shared_ptr<User>> recipients;
+  std::vector<std::weak_ptr<User>> participients;
 
-  // создаем пустой чат с участниками
-  // это тот чат, в котором мы пишем сообщение. Он либо новый либо был выбран
-  // существующий
+  auto chat_ptr1 = std::make_shared<Chat>(participients);
 
-  auto activeChat_ptr = std::make_shared<Chat>(
-      ActiveChatParticipients); // это аналог двух операций но без
-                                // дополнительной
+  recipients.push_back(Alex2104_ptr);
+  participients.push_back(Elena1510_ptr);
+  participients.push_back(Alex2104_ptr);
 
-  //  задаем текст сообщения через переменную
-  std::string text_tmp = "Тестовое сообщение";
+  InitDataArray Elena_Alex1("Привет", "01-04-2025,12:00:00", Elena1510_ptr, recipients);
 
-  // создаем объект структуры под тип текст
+  // создаем вектор из MessangeContent для включения в Message
+  std::vector<std::shared_ptr<IMessageContent>> iMessageContent;
+  // создаем переменную структуры TextContent
+  TextContent textContent(Elena_Alex1._messageText);
+  // создаем объкт для включения в сообщение
+  MessageContent<TextContent> messageContentText(textContent);
+  // создаем указатель на него
+  std::shared_ptr<IMessageContent> messageContentText_ptr = std::make_shared<MessageContent<TextContent>>(
+      messageContentText);
+  // и добавляем его в вектор MessageContent
+  iMessageContent.push_back(messageContentText_ptr);
+  // создаем объект Message
+  Message message(iMessageContent, Elena1510_ptr, Elena_Alex1._timeStamp);
+  // добавляем Message в Chat
+  chat_ptr1->addMessage(std::make_shared<Message>(message));
+  // добавляем чат в список чатов каждого пользователя
 
-  TextContent textContent(text_tmp); // создали структуру
-  MessageContent<TextContent> iMessageContentText(
-      textContent); // создали объект содержания сообщения с текстом
-  std::shared_ptr<IMessageContent> iMessageContentText_ptr =
-      std::make_shared<MessageContent<TextContent>>(textContent);
+  for (const auto &chatUser : participients) {
+    if (auto chatUser_ptr = chatUser.lock()) {
+      chatUser_ptr->getUserChatList()->addChat(chat_ptr1);
+    } else {
+      std::cout << "user уничтожен " << chatUser_ptr->getLogin() << std::endl;
+    }
+  }
 
-  // задаем картинку через переменную
-  std::string image_tmp = "Тестовая картинка";
+  recipients.clear();
+  participients.clear();
+  iMessageContent.clear();
+  messageContentText_ptr.reset();
 
-  // создаем объект структуры под тип картинка
-  ImageContent imageContent(image_tmp);
-  MessageContent<ImageContent> iMessageContentImage(imageContent);
-  std::shared_ptr<IMessageContent> iMessageContentImage_ptr =
-      std::make_shared<MessageContent<ImageContent>>(imageContent);
+//   message.printMessage(Elena1510_ptr);
 
-  // создаем vector из messageContent, который содержит сообщение состоящее из
-  // текста и картинки
-  std::vector<std::shared_ptr<IMessageContent>> messageContent;
-  messageContent.push_back(iMessageContentText_ptr);
-  messageContent.push_back(iMessageContentImage_ptr);
+  auto chat_ptr2 = std::make_shared<Chat>(participients);
 
-  // теперь создаём объект Message, который, в свою очередь, дальше будет
-  // включен в класс Chat
-  Message message1(messageContent, user1_ptr);
-  std::shared_ptr<Message> message1_ptr = std::make_shared<Message>(message1);
-  Message message2(messageContent, user2_ptr);
-  std::shared_ptr<Message> message2_ptr = std::make_shared<Message>(message2);
+  recipients.push_back(Elena1510_ptr);
+  participients.push_back(Alex2104_ptr);
+  participients.push_back(Elena1510_ptr);
 
-  // добавляем сообщение в активный чат
-  activeChat_ptr->addMessage(message1_ptr);
-  activeChat_ptr->addMessage(message2_ptr);
+  InitDataArray Elena_Alex2("Хай! как делишки?", "01-04-2025,12:05:00", Alex2104_ptr, recipients);
+  // создаем вектор из MessangeContent для включения в Message
+  //   std::vector<std::shared_ptr<IMessageContent>> iMessageContent;
+  // создаем переменную структуры TextContent
+  TextContent textContent2(Elena_Alex2._messageText);
+  // создаем объкт для включения в сообщение
+  MessageContent<TextContent> messageContentText2(textContent2);
+  // создаем указатель на него
+  std::shared_ptr<IMessageContent> messageContentText2_ptr = std::make_shared<MessageContent<TextContent>>(
+      messageContentText2);
+  // и добавляем его в вектор MessageContent
+  iMessageContent.push_back(messageContentText2_ptr);
+  // создаем объект Message
+  Message message2(iMessageContent, Elena1510_ptr, Elena_Alex1._timeStamp);
+  // добавляем Message в Chat
+  chat_ptr2->addMessage(std::make_shared<Message>(message2));
+  // добавляем чат в список чатов каждого пользователя
 
-  // добавляем новый чат в список чатов каждого пользователя
-  user1_ptr->getUserChatList()->addChat(activeChat_ptr);
-  user2_ptr->getUserChatList()->addChat(activeChat_ptr);
-  user3_ptr->getUserChatList()->addChat(activeChat_ptr);
+  for (const auto &chatUser : participients) {
+    if (auto chatUser_ptr = chatUser.lock()) {
+      chatUser_ptr->getUserChatList()->addChat(chat_ptr2);
+    } else {
+      std::cout << "user уничтожен " << chatUser_ptr->getLogin() << std::endl;
+    }
+  }
 
-  //   message1_ptr->printMessage(activeUser_ptr);
-  //   activeChat_ptr->printChat(activeUser_ptr);
+  chat_ptr2->printChat(Elena1510_ptr);
+
+  // recipients.clear();
+  //   recipients.push_back(Alex2104_ptr);
+  //   InitDataArray Elena_Alex3("Хорошо, как насчет кофе?", "01-04-2025,12:07:00", Elena1510_ptr, recipients);
 };

@@ -30,11 +30,9 @@
  * @return true если строка валидна
  * @throws std::invalid_argument при нарушении условий
  */
-bool checkNewDataInputForLimits(const std::string &inputData,
-                                std::size_t contentLengthMin,
+bool checkNewDataInputForLimits(const std::string &inputData, std::size_t contentLengthMin,
                                 std::size_t contentLengthMax, bool isPassword) {
-  if (inputData.length() < contentLengthMin ||
-      inputData.length() > contentLengthMax) {
+  if (inputData.length() < contentLengthMin || inputData.length() > contentLengthMax) {
     throw std::invalid_argument("Некорректное количество символов.");
   }
 
@@ -42,8 +40,7 @@ bool checkNewDataInputForLimits(const std::string &inputData,
 
   for (char ch : inputData) {
     if (!std::isalnum(ch)) {
-      throw std::invalid_argument("Недопустимый символ: '" +
-                                  std::string(1, ch) + "'");
+      throw std::invalid_argument("Недопустимый символ: '" + std::string(1, ch) + "'");
     }
     if (std::isdigit(ch))
       isNumber = true;
@@ -74,11 +71,8 @@ bool checkNewDataInputForLimits(const std::string &inputData,
  * @param chatSystem Система чатов для валидации данных
  * @return std::string валидированная строка или "0" для выхода
  */
-std::string inputDataValidation(const std::string &prompt,
-                                std::size_t dataLengthMin,
-                                std::size_t dataLengthMax, bool isPassword,
-                                UserData userData, bool newUserData,
-                                const ChatSystem &chatSystem) {
+std::string inputDataValidation(const std::string &prompt, std::size_t dataLengthMin, std::size_t dataLengthMax,
+                                bool isPassword, UserData userData, bool newUserData, const ChatSystem &chatSystem) {
   std::cout << prompt << std::endl;
   std::string inputData;
 
@@ -93,8 +87,7 @@ std::string inputDataValidation(const std::string &prompt,
 
     try {
       if (newUserData) {
-        checkNewDataInputForLimits(inputData, dataLengthMin, dataLengthMax,
-                                   isPassword);
+        checkNewDataInputForLimits(inputData, dataLengthMin, dataLengthMax, isPassword);
       }
       return inputData;
     } catch (const std::exception &ex) {
@@ -106,21 +99,17 @@ std::string inputDataValidation(const std::string &prompt,
 /**
  * @brief Поиск пользователя по логину.
  */
-std::shared_ptr<User> findUserbyLogin(const std::string &userLogin,
-                                      const ChatSystem &chatSystem) {
+std::shared_ptr<User> findUserbyLogin(const std::string &userLogin, const ChatSystem &chatSystem) {
   const auto &users = chatSystem.getUsers();
   auto it = std::find_if(users.begin(), users.end(),
-                         [&](const std::shared_ptr<User> &u) {
-                           return u->getLogin() == userLogin;
-                         });
+                         [&](const std::shared_ptr<User> &u) { return u->getLogin() == userLogin; });
   return (it != users.end()) ? *it : nullptr;
 }
 
 /**
  * @brief Проверяет наличие логина в системе.
  */
-const std::shared_ptr<User> checkLoginExists(const std::string &login,
-                                             const ChatSystem &chatSystem) {
+const std::shared_ptr<User> checkLoginExists(const std::string &login, const ChatSystem &chatSystem) {
   for (const auto &user : chatSystem.getUsers()) {
     if (user->getLogin() == login)
       return user;
@@ -131,8 +120,7 @@ const std::shared_ptr<User> checkLoginExists(const std::string &login,
 /**
  * @brief Проверка пароля для заданного логина.
  */
-bool checkPasswordValidForUser(const UserData &userData,
-                               const ChatSystem &chatSystem) {
+bool checkPasswordValidForUser(const UserData &userData, const ChatSystem &chatSystem) {
   auto user = findUserbyLogin(userData._login, chatSystem);
   return user && userData._password == user->getPassword();
 }
@@ -143,9 +131,8 @@ bool checkPasswordValidForUser(const UserData &userData,
 void inputNewLogin(UserData &userData, const ChatSystem &chatSystem) {
   std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
   while (true) {
-    std::string newLogin =
-        inputDataValidation("Введите логин (или 0 для выхода):", 5, 20, false,
-                            userData, true, chatSystem);
+    std::string newLogin = inputDataValidation("Введите логин (или 0 для выхода):", 5, 20, false, userData, true,
+                                               chatSystem);
 
     if (newLogin == "0")
       return;
@@ -163,9 +150,8 @@ void inputNewLogin(UserData &userData, const ChatSystem &chatSystem) {
  * @brief Ввод и проверка пароля пользователя.
  */
 void inputNewPassword(UserData &userData, const ChatSystem &chatSystem) {
-  std::string newPassword =
-      inputDataValidation("Введите пароль (или 0 для выхода):", 5, 10, true,
-                          userData, true, chatSystem);
+  std::string newPassword = inputDataValidation("Введите пароль (или 0 для выхода):", 5, 10, true, userData, true,
+                                                chatSystem);
   if (newPassword != "0")
     userData._password = newPassword;
 }
@@ -174,9 +160,8 @@ void inputNewPassword(UserData &userData, const ChatSystem &chatSystem) {
  * @brief Ввод и проверка имени пользователя.
  */
 void inputNewName(UserData &userData, const ChatSystem &chatSystem) {
-  std::string newName =
-      inputDataValidation("Введите имя (или 0 для выхода):", 3, 10, false,
-                          userData, true, chatSystem);
+  std::string newName = inputDataValidation("Введите имя (или 0 для выхода):", 3, 10, false, userData, true,
+                                            chatSystem);
   if (newName != "0")
     userData._name = newName;
 }
@@ -200,8 +185,7 @@ void userRegistration(ChatSystem &chatSystem) {
   if (userData._name.empty())
     return;
 
-  auto newUser = std::make_shared<User>(userData._login, userData._name,
-                                        userData._password);
+  auto newUser = std::make_shared<User>(userData._login, userData._name, userData._password);
   chatSystem.addUser(newUser);
   chatSystem.setActiveUser(newUser);
   newUser->showUserData();
@@ -220,9 +204,8 @@ bool userLoginInsystem(ChatSystem &chatSystem) {
 
   // логин
   while (true) {
-    userData._login =
-        inputDataValidation("Введите логин (или 0 для выхода):", 0, 0, false,
-                            userData, false, chatSystem);
+    userData._login = inputDataValidation("Введите логин (или 0 для выхода):", 0, 0, false, userData, false,
+                                          chatSystem);
     if (userData._login == "0")
       return false;
 
@@ -233,9 +216,8 @@ bool userLoginInsystem(ChatSystem &chatSystem) {
     break;
   }
   // пароль
-  userData._password =
-      inputDataValidation("Введите пароль (или 0 для выхода):", 0, 0, true,
-                          userData, false, chatSystem);
+  userData._password = inputDataValidation("Введите пароль (или 0 для выхода):", 0, 0, true, userData, false,
+                                           chatSystem);
   if (userData._password == "0")
     return false;
 

@@ -20,7 +20,7 @@ private:
 public:
   // constructors
   Message(const std::vector<std::shared_ptr<IMessageContent>> &content,
-          const std::weak_ptr<User> &sender);
+          const std::weak_ptr<User> &sender, const std::string& timeStamp);
 
   ~Message() override = default; // destructor
 

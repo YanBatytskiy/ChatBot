@@ -7,7 +7,8 @@
 
 // #include "chat.h"
 // #include "message.h"
-// #include "message_content.h"
+// #include "message_content.h"  //   recipients.push_back(Elena1510_ptr);
+
 // #include "message_content_struct.h"
 // #include "user.h"
 // #include "user_chat_list.h"
@@ -19,8 +20,8 @@ int main() {
   // создаем ChatSystem1
   ChatSystem chatSystem;
 
-  systemInintTest(chatSystem);
- 
+  systemInitTest(chatSystem);
+
   short userChoice;
 
   while (true) {
@@ -35,10 +36,14 @@ int main() {
     case 1: // регистрация нового пользователя
       userRegistration(chatSystem);
       break;
-    case 2: // вход пользователя в систему
-      if (userLoginInsystem(chatSystem))
-        mainhMenu(chatSystem);
-      break;
+    case 2: { // вход пользователя в систему
+              //   if (userLoginInsystem(chatSystem))
+      std::shared_ptr<User> activeUser_ptr =
+          findUserbyLogin("Alex2104", chatSystem);
+
+      chatSystem.setActiveUser(activeUser_ptr);
+      mainhMenu(chatSystem);
+    } break;
     default:
       break;
     }

@@ -28,7 +28,8 @@ void StartSystem() { /// @brief start system
  * - 0 — Завершение программы.
  */
 short authMenu() { // вывод главного меню
-  std::cout << "ChatBot 'Shark' Версия 1.0. @2025 \n \n";
+
+	std::cout << std::endl << "ChatBot 'Shark' Версия 1.0. @2025 \n \n";
   short userChoice;
 
   std::cout << "Выберите пункт меню: \n1 - Регистрация пользователя \n2 - "
