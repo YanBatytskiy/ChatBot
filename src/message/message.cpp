@@ -1,6 +1,6 @@
-#include "message.h"
-#include "message_content.h"
-#include "message_content_struct.h"
+#include "message/message.h"
+#include "message/message_content.h"
+#include "message/message_content_struct.h"
 #include <iostream>
 #include <memory>
 

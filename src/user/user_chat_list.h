@@ -8,7 +8,7 @@
 
 #pragma once
 
-#include "chat.h"
+#include "chat/chat.h"
 #include <memory>
 #include <vector>
 
@@ -22,6 +22,7 @@ private:
   std::weak_ptr<User> _owner;                 ///< Владелец списка чатов (пользователь)
   std::vector<std::weak_ptr<Chat>> _chatList; ///< Список чатов пользователя
   std::vector<std::size_t> _lastReadIndex;    ///< Номера последних прочитанных сообщений для каждого чата
+  std::size_t _chatCount;
 
 public:
   /**
@@ -35,6 +36,7 @@ public:
   ~UserChatList() = default;
 
   // --- Геттеры ---
+  std::size_t getChatCount() const;
 
   /**
    * @brief Получить владельца списка чатов.
@@ -46,7 +48,7 @@ public:
    * @brief Получить список чатов пользователя.
    * @return Вектор слабых указателей на чаты
    */
-  std::vector<std::weak_ptr<Chat>> getChatList() const;
+  std::vector<std::weak_ptr<Chat>> getChatFromList() const;
 
   /**
    * @brief Получить список последних прочитанных индексов сообщений по каждому чату.
@@ -61,6 +63,8 @@ public:
    *
    * @param chat Указатель на чат
    */
+  void setChatCount(std::size_t chatCount);
+
   void addChat(const std::weak_ptr<Chat> &chat);
 
   void setLastReadIndex(std::size_t index, std::size_t value);

@@ -5,8 +5,8 @@
  * @date 2025
  */
 
-#include "user.h"
-#include "user_chat_list.h"
+#include "user/user.h"
+#include "user/user_chat_list.h"
 
 #include <cstddef>
 #include <iostream>
@@ -115,7 +115,7 @@ void User::printChatList(const std::shared_ptr<User> &user) const {
   std::cout << std::endl << "Список чатов пользователя " << user->_userName << " :" << std::endl;
 
   // достаем чатлист
-  const auto &chatList = user->getUserChatList()->getChatList();
+  const auto &chatList = user->getUserChatList()->getChatFromList();
 
   if (chatList.empty()) {
     std::cout << "У пользователя нет чатов." << std::endl;

@@ -1,7 +1,7 @@
 #pragma once
 
-#include "message.h"
-#include "user.h"
+#include "message/message.h"
+#include "user/user.h"
 #include <memory>
 #include <vector>
 
@@ -12,9 +12,9 @@ private:
 
 public:
   Chat(const std::vector<std::weak_ptr<User>> &participients);
-           // constructor for an empty chat. not initilize_messagess becouse
-           // constructor of vector will make it empty automatically
-           
+  // constructor for an empty chat. not initilize_messagess becouse
+  // constructor of vector will make it empty automatically
+
   virtual ~Chat() = default; // destructor
 
   // add message to chat
@@ -28,6 +28,4 @@ public:
 
   // print full chat
   void printChat(const std::shared_ptr<User> &currentUser);
-  
-  
 };

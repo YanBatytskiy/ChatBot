@@ -1,6 +1,6 @@
 #pragma once
-#include "message_content.h"
-#include "user.h"
+#include "message/message_content.h"
+#include "user/user.h"
 #include <memory>
 #include <string>
 #include <vector>
@@ -19,8 +19,8 @@ private:
 
 public:
   // constructors
-  Message(const std::vector<std::shared_ptr<IMessageContent>> &content,
-          const std::weak_ptr<User> &sender, const std::string& timeStamp);
+  Message(const std::vector<std::shared_ptr<IMessageContent>> &content, const std::weak_ptr<User> &sender,
+          const std::string &timeStamp);
 
   ~Message() override = default; // destructor
 
@@ -38,7 +38,7 @@ public:
   // add content to the message
   void addContent(const std::shared_ptr<IMessageContent> &content);
 
-  void printMessage(const std::shared_ptr<User>& currentUser); 
+  void printMessage(const std::shared_ptr<User> &currentUser);
 
   // delete message will be realized further
 

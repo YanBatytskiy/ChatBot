@@ -5,7 +5,7 @@
 struct TextContent {
   std::string _text;
 
-  TextContent(const std::string& text) : _text(text) {};
+  TextContent(const std::string &text) : _text(text) {};
   ~TextContent() = default;
 };
 
@@ -18,6 +18,6 @@ struct FileContent { // will be realized further
 struct ImageContent { // will be realized further
   std::string _image;
 
-  ImageContent(const std::string& image) : _image(image) {};
+  ImageContent(const std::string &image) : _image(image) {};
   ~ImageContent() = default;
 };

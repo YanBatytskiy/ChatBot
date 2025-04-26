@@ -5,13 +5,13 @@
  * @date 2025
  */
 
-#include "code_init_system.h"
-#include "chat.h"
-#include "message.h"
-#include "message_content.h"
-#include "message_content_struct.h"
-#include "user.h"
-#include "user_chat_list.h"
+#include "menu/code_init_system.h"
+#include "chat/chat.h"
+#include "message/message.h"
+#include "message/message_content.h"
+#include "message/message_content_struct.h"
+#include "user/user.h"
+#include "user/user_chat_list.h"
 
 #include <algorithm>
 #include <iostream>
@@ -44,7 +44,7 @@ void changeLastReadIndexForSender(const std::shared_ptr<User> &user, const std::
 
   // зная юзера я могу взять shared ссылку на чатлист юзера
   auto userChatList_ptr = user->getUserChatList();
-  auto chatList = userChatList_ptr->getChatList();
+  auto chatList = userChatList_ptr->getChatFromList();
 
   if (!userChatList_ptr) {
     std::cerr << "[Ошибка] У пользователя нет списка чатов." << std::endl;
@@ -73,6 +73,7 @@ void changeLastReadIndexForSender(const std::shared_ptr<User> &user, const std::
 }
 
 void addMessageToChat(const InitDataArray &initDataArray, std::shared_ptr<Chat> &chat) {
+
   std::vector<std::shared_ptr<IMessageContent>> iMessageContent;
   TextContent textContent(initDataArray._messageText);
   MessageContent<TextContent> messageContentText(textContent);
@@ -161,6 +162,8 @@ void systemInitTest(ChatSystem &_chatsystem) {
   InitDataArray Elena_Alex3("Хорошо, как насчет кофе?", "01-04-2025,12:07:00", Elena1510_ptr, recipients);
   addMessageToChat(Elena_Alex3, chat_ptr);
 
+  Elena1510_ChatList_ptr->setLastReadIndex(0, 3);
+
   chat_ptr->printChat(Elena1510_ptr);
 
   // Создание второго чата: Elena, Sasha и Сергей (групповой чат)
@@ -219,6 +222,8 @@ void systemInitTest(ChatSystem &_chatsystem) {
 
   InitDataArray Elena_Alex_Serg5("В кино!", "01-04-2025,13:33:00", Serg0101_ptr, recipients);
   addMessageToChat(Elena_Alex_Serg5, chat_ptr);
+
+  Elena1510_ChatList_ptr->setLastReadIndex(1, 4);
 
   chat_ptr->printChat(Elena1510_ptr);
 }

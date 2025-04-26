@@ -1,6 +1,6 @@
 #pragma once
-#include "chat.h"
-#include "user.h"
+#include "chat/chat.h"
+#include "user/user.h"
 #include <memory>
 #include <vector>
 

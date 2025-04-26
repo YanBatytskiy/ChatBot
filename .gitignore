@@ -1,6 +1,7 @@
 .DS_Store
 # Игнорировать настройки VS Code
 .vscode/
+.cache/
 Vending_Machine/
 docs/
 
@@ -12,6 +13,8 @@ docs/
 *.sh
 *.puml
 Doxyfile.*
+.clang-format
+
 main
 
 # Игнорировать все исполняемые файлы внутри проектов

@@ -5,20 +5,18 @@
  * @date 2025
  */
 
-#include "code_registration.h"
-#include "chat_system.h"
-#include "user.h"
-#include "user_chat_list.h"
+#include "menu/code_registration.h"
+#include "system/chat_system.h"
+#include "user/user.h"
+#include "user/user_chat_list.h"
 #include <algorithm>
 #include <cctype>
 #include <cstddef>
 #include <exception>
 #include <iostream>
 #include <limits>
-#include <memory>
 #include <stdexcept>
 #include <string>
-#include <vector>
 
 /**
  * @brief Проверка логина или пароля по длине и содержанию.

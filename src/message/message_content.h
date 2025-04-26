@@ -11,13 +11,11 @@ private:
   T _content; // will take type according to the used struct of message content
 
 public:
-  explicit MessageContent(const T &content)
-      : _content(content) {}; // constructor
+  explicit MessageContent(const T &content) : _content(content) {}; // constructor
   // destructor will be inherited from interface IMessageContent
 
   T &getMessageContent() { return _content; };
   const T &getMessageContent() const { return _content; };
 
-  void setMessageContent(const T &content) {
-  }; // for edit of message, will be realized further
+  void setMessageContent(const T &content) {}; // for edit of message, will be realized further
 };
