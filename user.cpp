@@ -125,15 +125,17 @@ void User::printChatList(const std::shared_ptr<User> &user) const {
   std::size_t index = 1;
 
   // перебираем чаты в списке
-  for (const auto& weakChat : chatList) {
+  for (const auto &weakChat : chatList) {
     if (auto Chat_ptr = weakChat.lock()) {
       std::cout << index << ". ";
 
       // перебираем участников чата
-      for (const auto& participient : Chat_ptr->getParticipients()) {
+      for (const auto &participient : Chat_ptr->getParticipients()) {
         auto participient_ptr = participient.lock();
         if (participient_ptr) {
-          std::cout << participient_ptr->getLogin() << ", ";
+          if (participient_ptr != user) {
+            std::cout << participient_ptr->getLogin() << "; ";
+          }
         } else {
           std::cout << "удал. пользоыватель. ";
         }

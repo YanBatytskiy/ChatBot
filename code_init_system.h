@@ -37,6 +37,8 @@
    /// @brief Деструктор по умолчанию.
    virtual ~InitDataArray() = default;
  };
+
+ void changeLastReadIndexForSender(const std::shared_ptr<User> &user, const std::shared_ptr<Chat> &chat);
  
  /**
   * @brief Создаёт сообщение на основе данных и добавляет его в указанный чат.

@@ -47,7 +47,7 @@
    // --- Геттеры ---
  
    /**
-	* @brief Получить логин пользователя.
+	* @brief Получить логин пользователя..addChat(chat_ptr)
 	* @return Логин
 	*/
    std::string getLogin() const;

@@ -9,6 +9,7 @@
 
 #include <iostream>
 #include <limits>
+#include <ostream>
 
 /**
  * @brief Отображает главное меню авторизации и получает выбор пользователя.
@@ -57,7 +58,19 @@ void mainhMenu(ChatSystem &chatSystem) { // вывод главного меню
   }
   case 2: {
     auto activeUser = chatSystem.getActiveUser();
-    activeUser->printChatList(activeUser);
+
+    while (true) {
+      std::cout << std::endl;
+      activeUser->printChatList(activeUser);
+      std::cout << std::endl;
+	  std::cout << "Выберите пункт меню: " << std::endl;
+	  std::cout << "1 - Поиск по всем чатам" << std::endl;
+	  std::cout << "2 - Показать список чатов" << std::endl;
+	  std::cout << "3 - Показать список папок" << std::endl;
+	  std::cout << "4 - Показать Профиль пользователя" << std::endl;
+	  std::cout << "0 - Выйти в предыдущее меню" << std::endl;
+	 
+    }
     break;
   }
   case 3: {

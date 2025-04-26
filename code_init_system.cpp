@@ -13,6 +13,7 @@
 #include "user.h"
 #include "user_chat_list.h"
 
+#include <algorithm>
 #include <iostream>
 #include <memory>
 #include <vector>
@@ -35,6 +36,42 @@ InitDataArray::InitDataArray(std::string messageText, std::string timeStamp, std
  * @param initDataArray Структура с данными для создания сообщения
  * @param chat Указатель на чат, куда добавляется сообщение
  */
+
+void changeLastReadIndexForSender(const std::shared_ptr<User> &user, const std::shared_ptr<Chat> &chat) {
+  // у нас есть chat и есть слабая ссылка на юзера
+  // значит нам нужна из нее shared ссылка на юзера
+  // чтобы потом получить чатлист и добавить в вектор индексов прочитанных сообщений новое значение для отправителя
+
+  // зная юзера я могу взять shared ссылку на чатлист юзера
+  auto userChatList_ptr = user->getUserChatList();
+  auto chatList = userChatList_ptr->getChatList();
+
+  if (!userChatList_ptr) {
+    std::cerr << "[Ошибка] У пользователя нет списка чатов." << std::endl;
+    return;
+  }
+
+  // далее я могу найти индекс чата в чат листе
+  auto it = std::find_if(chatList.begin(), chatList.end(), [&chat](const std::weak_ptr<Chat> &weakp_ptr) {
+    auto chat_ptr = weakp_ptr.lock();
+
+    if ((!chat_ptr)) {
+      return false;
+    }
+    return chat_ptr == chat;
+  });
+
+  // ищем индекс чата в чатлисте
+  if (it != chatList.end()) {
+
+    std::size_t index = std::distance(chatList.begin(), it);
+
+    userChatList_ptr->setLastReadIndex(index, userChatList_ptr->getLastReadIndex()[index] + 1);
+  } else {
+    std::cerr << "[Ошибка] Чат не найден в списке пользователя." << std::endl;
+  }
+}
+
 void addMessageToChat(const InitDataArray &initDataArray, std::shared_ptr<Chat> &chat) {
   std::vector<std::shared_ptr<IMessageContent>> iMessageContent;
   TextContent textContent(initDataArray._messageText);
@@ -47,7 +84,9 @@ void addMessageToChat(const InitDataArray &initDataArray, std::shared_ptr<Chat> 
     Message message(iMessageContent, initDataArray._sender, initDataArray._timeStamp);
 
     chat->addMessage(std::make_shared<Message>(message));
-  }
+
+    changeLastReadIndexForSender(initDataArray._sender, chat);
+  };
 }
 
 /**
@@ -100,12 +139,12 @@ void systemInitTest(ChatSystem &_chatsystem) {
       auto chatList = chatUser_ptr->getUserChatList();
       if (chatList) {
         chatList->addChat(chat_ptr);
-	} else {
-		std::cout << "[Ошибка] У пользователя нет списка чатов!\n" << std::endl;
-	}
-}
-}
-_chatsystem.addChat(chat_ptr);
+      } else {
+        std::cout << "[Ошибка] У пользователя нет списка чатов!\n" << std::endl;
+      }
+    }
+  }
+  _chatsystem.addChat(chat_ptr);
 
   InitDataArray Elena_Alex1("Привет", "01-04-2025,12:00:00", Elena1510_ptr, recipients);
   addMessageToChat(Elena_Alex1, chat_ptr);
