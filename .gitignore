@@ -12,8 +12,11 @@ docs/
 *.txt
 *.sh
 *.puml
-Doxyfile.*
+Doxyfile
+plant.puml
+.cache/clangd/index/
 .clang-format
+compile_commands.json
 
 main
 
@@ -24,3 +27,5 @@ main
 # Игнорировать исполняемые файлы
 *.exe
 main
+
+
