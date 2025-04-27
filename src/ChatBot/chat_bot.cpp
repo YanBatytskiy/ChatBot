@@ -14,9 +14,9 @@ int main() {
   short userChoice;
 
   while (true) {
-    // chatSystem.setActiveUser(nullptr);
-    std::shared_ptr<User> activeUser_ptr = findUserbyLogin("Elena1510", chatSystem);
-    chatSystem.setActiveUser(activeUser_ptr);
+    chatSystem.setActiveUser(nullptr);
+    // std::shared_ptr<User> activeUser_ptr = findUserbyLogin("E", chatSystem);
+    // chatSystem.setActiveUser(activeUser_ptr);
 
     userChoice = authMenu();
 
@@ -36,8 +36,8 @@ int main() {
       userRegistration(chatSystem);
       break;
     case 2: { // вход пользователя в систему
-              //   if (userLoginInsystem(chatSystem))
-      mainMenuChoice(chatSystem);
+      if (userLoginInsystem(chatSystem))
+        mainMenuChoice(chatSystem);
       //
       //
 

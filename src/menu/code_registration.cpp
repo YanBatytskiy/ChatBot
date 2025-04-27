@@ -40,18 +40,19 @@ bool checkNewDataInputForLimits(const std::string &inputData, std::size_t conten
     if (!std::isalnum(ch)) {
       throw std::invalid_argument("Недопустимый символ: '" + std::string(1, ch) + "'");
     }
-    if (std::isdigit(ch))
+// ДОДЕЛАТЬ - ВЕРНУТЬ ОГРАНИЧЕНИЯ
+    // if (std::isdigit(ch))
       isNumber = true;
-    if (std::isupper(ch))
+    // if (std::isupper(ch))
       isCapital = true;
   }
 
-  if (isPassword) {
-    if (!isCapital)
-      throw std::invalid_argument("Требуется заглавная буква.");
-    if (!isNumber)
-      throw std::invalid_argument("Требуется цифра.");
-  }
+//   if (isPassword) {
+//     if (!isCapital)
+//       throw std::invalid_argument("Требуется заглавная буква.");
+//     if (!isNumber)
+//       throw std::invalid_argument("Требуется цифра.");
+//   }
 
   return true;
 }
@@ -129,9 +130,12 @@ bool checkPasswordValidForUser(const UserData &userData, const ChatSystem &chatS
 void inputNewLogin(UserData &userData, const ChatSystem &chatSystem) {
   std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
   while (true) {
-    std::string newLogin = inputDataValidation("Введите логин (или 0 для выхода):", 5, 20, false, userData, true,
+    std::string newLogin = inputDataValidation("Введите новый Логин либо 0 для выхода в предыдущее меню. Логин не "
+        "менее 5 "
+        "символов и не более 20 символов (можно использовать только латинские "
+        "буквы и цифры) - ", 1, 20, false, userData, true,
                                                chatSystem);
-
+// ДОДЕЛАТЬ - ВЕРНУТЬ ОГРАНИЧЕНИЯ 5-20
     if (newLogin == "0")
       return;
     if (checkLoginExists(newLogin, chatSystem)) {
@@ -148,36 +152,43 @@ void inputNewLogin(UserData &userData, const ChatSystem &chatSystem) {
  * @brief Ввод и проверка пароля пользователя.
  */
 void inputNewPassword(UserData &userData, const ChatSystem &chatSystem) {
-  std::string newPassword = inputDataValidation("Введите пароль (или 0 для выхода):", 5, 10, true, userData, true,
-                                                chatSystem);
+  std::string newPassword = inputDataValidation("Введите новый Пароль либо 0 для выхода в предыдущее меню. Пароль не "
+                                                "менее 5 символов и не более 10, "
+                                                "обязательно использовать минимум одну заглавную букву и одну цифру "
+                                                "(можно использовать только латинские буквы и цифры) - ",
+                                                1, 10, true, userData, true, chatSystem);
+  // ДОДЕЛАТЬ - ВЕРНУТЬ ОГРАНИЧЕНИЯ 5-10
   if (newPassword != "0")
-    userData._password = newPassword;
+  userData._password = newPassword;
 }
 
 /**
- * @brief Ввод и проверка имени пользователя.
- */
+* @brief Ввод и проверка имени пользователя.
+*/
 void inputNewName(UserData &userData, const ChatSystem &chatSystem) {
-  std::string newName = inputDataValidation("Введите имя (или 0 для выхода):", 3, 10, false, userData, true,
-                                            chatSystem);
-  if (newName != "0")
-    userData._name = newName;
+	std::string newName = inputDataValidation("Введите желаемое Имя для отображения, не менее 3 символов и не более "
+		"10, (можно использовать только латинские буквы и цифры) - ", 1, 10, false, userData, true,
+		chatSystem);
+		// ДОДЕЛАТЬ - ВЕРНУТЬ ОГРАНИЧЕНИЯ 3-10
+		if (newName != "0")
+		userData._name = newName;
 }
 
 /**
- * @brief Регистрация нового пользователя.
- */
+* @brief Регистрация нового пользователя.
+*/
 void userRegistration(ChatSystem &chatSystem) {
-  std::cout << "Регистрация нового пользователя.\n";
-  UserData userData;
-
-  inputNewLogin(userData, chatSystem);
-  if (userData._login.empty())
+	std::cout << "Регистрация нового пользователя.\n";
+	UserData userData;
+	
+	inputNewLogin(userData, chatSystem);
+	if (userData._login.empty())
     return;
 
-  inputNewPassword(userData, chatSystem);
-  if (userData._password.empty())
-    return;
+        // ДОДЕЛАТЬ - ВЕРНУТЬ ОГРАНИЧЕНИЯ
+//   inputNewPassword(userData, chatSystem);
+//   if (userData._password.empty())
+//     return;
 
   inputNewName(userData, chatSystem);
   if (userData._name.empty())
@@ -211,20 +222,22 @@ bool userLoginInsystem(ChatSystem &chatSystem) {
       std::cerr << "Такой логин не найден.\n";
       continue;
     }
+	  auto user = findUserbyLogin(userData._login, chatSystem);
+	  chatSystem.setActiveUser(user);
     break;
   }
   // пароль
-  userData._password = inputDataValidation("Введите пароль (или 0 для выхода):", 0, 0, true, userData, false,
-                                           chatSystem);
-  if (userData._password == "0")
-    return false;
+//   userData._password = inputDataValidation("Введите пароль (или 0 для выхода):", 0, 0, true, userData, false,
+//                                            chatSystem);
+//   if (userData._password == "0")
+//     return false;
 
-  if (!checkPasswordValidForUser(userData, chatSystem)) {
-    std::cerr << "Неверный пароль.\n";
-    return false;
-  }
+//   if (!checkPasswordValidForUser(userData, chatSystem)) {
+//     std::cerr << "Неверный пароль.\n";
+//     return false;
+//   }
 
-  auto user = findUserbyLogin(userData._login, chatSystem);
-  chatSystem.setActiveUser(user);
+//   auto user = findUserbyLogin(userData._login, chatSystem);
+//   chatSystem.setActiveUser(user);
   return true;
 }

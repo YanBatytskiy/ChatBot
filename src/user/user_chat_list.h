@@ -21,7 +21,6 @@ class UserChatList {
 private:
   std::weak_ptr<User> _owner;                 ///< Владелец списка чатов (пользователь)
   std::vector<std::weak_ptr<Chat>> _chatList; ///< Список чатов пользователя
-  std::vector<std::size_t> _lastReadIndex;    ///< Номера последних прочитанных сообщений для каждого чата
   std::size_t _chatCount;
 
 public:
@@ -50,12 +49,6 @@ public:
    */
   std::vector<std::weak_ptr<Chat>> getChatFromList() const;
 
-  /**
-   * @brief Получить список последних прочитанных индексов сообщений по каждому чату.
-   * @return Вектор индексов
-   */
-  std::vector<std::size_t> getLastReadIndex() const;
-
   // --- Сеттеры ---
 
   /**
@@ -67,12 +60,5 @@ public:
 
   void addChat(const std::weak_ptr<Chat> &chat);
 
-  void setLastReadIndex(std::size_t index, std::size_t value);
-
   // --- Дополнительные методы ---
-
-  /**
-   * @brief Отметить все сообщения во всех чатах как прочитанные.
-   */
-  void makeAllRead();
 };

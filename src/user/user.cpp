@@ -111,7 +111,7 @@ void User::showUserData() const {
  * @param user Ссылка на пользователя, для которого нужно напечатать список чатов
  */
 void User::printChatList(const std::shared_ptr<User> &user) const {
-
+// ДОДЕЛАТЬ ВЫВОД УДАЛЕННОГО ПОЛЬЗОВАТЕЛЯ В СПИСКЕ
   std::cout << std::endl << "Список чатов пользователя " << user->_userName << " :" << std::endl;
 
   // достаем чатлист
@@ -131,10 +131,10 @@ void User::printChatList(const std::shared_ptr<User> &user) const {
 
       // перебираем участников чата
       for (const auto &participient : Chat_ptr->getParticipients()) {
-        auto participient_ptr = participient.lock();
-        if (participient_ptr) {
-          if (participient_ptr != user) {
-            std::cout << participient_ptr->getLogin() << "; ";
+        auto user_ptr = participient._user.lock();
+        if (user_ptr) {
+          if (user_ptr != user) {
+            std::cout << user_ptr->getUserName() << "; ";
           }
         } else {
           std::cout << "удал. пользоыватель. ";

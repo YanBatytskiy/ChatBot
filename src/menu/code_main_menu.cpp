@@ -7,7 +7,6 @@
 #include "menu/code_init_system.h"
 #include "system/chat_system.h"
 #include "user/user_chat_list.h"
-// #include "chat.h"
 
 #include <cctype>
 #include <iostream>
@@ -62,24 +61,85 @@ short authMenu() { // вывод главного меню
 
 void menuListOpenChat1(ChatSystem &chatSystem, const std::shared_ptr<Chat> &chat, std::size_t unReadCountIndex) {
 
-  auto messageCount = chat->getMessages().size();
-  auto unReadCount = chatSystem.getActiveUser()->getUserChatList()->getLastReadIndex()[unReadCountIndex];
+  // ДОДЕЛАТЬ
 
-  // получаем количество неппрочитанных
+  bool exit = true;
+  while (exit) {
+    auto messageCount = chat->getMessages().size();
 
-  std::cout << std::endl << "Вот твой чат. В нем всего ..." << messageCount << " сообщений. ";
-  std::cout << "\033[32m"; // red
-  std::cout << "Из них непрочитанных - " << messageCount - unReadCount << std::endl;
-  std::cout << "\033[0m";
+    auto unReadCount = chat->getLastReadMessageIndex(chatSystem.getActiveUser());
+    // получаем количество неппрочитанных
 
-  chat->printChat(chatSystem.getActiveUser());
-  std::cout << std::endl;
+    std::cout << std::endl << "Вот твой чат. В нем всего " << messageCount << " сообщения(ий). ";
+    std::cout << "\033[32m"; // red
+    std::cout << "Из них непрочитанных - " << messageCount - unReadCount << std::endl;
+    std::cout << "\033[0m";
 
-  // ВСТАВИТЬ ДОПОЛНИТЕЛЬНОЕ МЕНЮ НА УДАЛЕНИЕ СООБЩЕНИЯ, ОЧИСТКУ ЧАТА, ПОИСК ВНУТРИ ЧАТА, УДАЛЕНИЕ ЧАТА
+    chat->printChat(chatSystem.getActiveUser());
+    chat->updateLastReadMessageIndex(chatSystem.getActiveUser(), messageCount);
+    std::cout << std::endl;
 
-  chatSystem.getActiveUser()->getUserChatList()->setLastReadIndex(unReadCountIndex, messageCount);
+    std::cout << std::endl;
+    std::cout << "Что будем делать? " << std::endl;
+    std::cout << "1 - написать сообщение" << std::endl;
+    std::cout << "2 - удалить последние отправленные сообщения - Under constraction" << std::endl;
+    std::cout << "3 - очистить чат - Under constraction" << std::endl;
+    std::cout << "4 - выйти из чата/удалить чат у пользователя - Under constraction" << std::endl;
+    std::cout << "5 - поиск внутри чата - Under constraction" << std::endl;
+    std::cout << "0 - Выйти в предыдущее меню" << std::endl;
 
-  inputNewMessage(chatSystem, chat, unReadCountIndex);
+    std::string userChoice;
+    size_t userChoiceNumber;
+
+    bool exit2 = true;
+    while (exit2) {
+      std::getline(std::cin, userChoice);
+      if (userChoice.empty()) {
+        std::cerr << "Вы ничего не ввели. Попробуйте еще раз." << std::endl;
+        continue;
+      } else if (userChoice == "0") {
+        exit = false;
+        break;
+      };
+
+      try {
+        userChoiceNumber = std::stoull(userChoice);
+
+      } catch (const std::exception &ex) {
+        std::cerr << "Вы ввели неправильные данные. Попробуйте еще раз." << std::endl;
+        continue;
+      }
+      if (userChoiceNumber < 1 || userChoiceNumber > 5) {
+        std::cerr << "Вы ввели неправильные данные. Попробуйте еще раз." << std::endl;
+        continue;
+      };
+
+      switch (userChoiceNumber) {
+      case 1:
+        inputNewMessage(chatSystem, chat, unReadCountIndex);
+        chat->updateLastReadMessageIndex(chatSystem.getActiveUser(), messageCount + 1);
+        std::cout << std::endl;
+        chat->printChat(chatSystem.getActiveUser());
+        std::cout << std::endl;
+        exit2 = false;
+        break; // case 1
+      case 2:
+        std::cout << "Under constraction 2." << std::endl;
+        break; // case 2
+      case 3:
+        std::cout << "Under constraction 3." << std::endl;
+        break; // case 3
+      case 4:
+        std::cout << "Under constraction 4." << std::endl;
+        break; // case 4
+      case 5:
+        std::cout << "Under constraction 5." << std::endl;
+        break; // case 5
+      default:
+        break; // default
+      } // switch
+    } // second while
+  } // first while
 }
 //
 //
@@ -91,10 +151,14 @@ void mainMenuList2(ChatSystem &chatSystem) {
 
   while (true) {
     std::cout << std::endl;
+
+	
     chatSystem.getActiveUser()->printChatList(chatSystem.getActiveUser());
     std::cout << std::endl << "всего: " << chatCount;
     std::cout << std::endl;
 
+    if (chatSystem.getActiveUser()->getUserChatList()->getChatFromList().empty()) return;
+	
     std::cout << "Выберите пункт меню: " << std::endl;
     std::cout << "От 1 до " << chatCount << " - Чтобы открыть чат введите его номер (всего " << chatCount
               << " чата(ов)): " << std::endl;
@@ -114,11 +178,11 @@ void mainMenuList2(ChatSystem &chatSystem) {
       try {
         chatNumber = std::stoull(userChoiceList2);
       } catch (const std::exception &e) {
-        std::cerr << "Вы ввели неправильные данные: " << std::endl;
+        std::cerr << "Вы ввели неправильные данные. Попробуйте еще раз." << std::endl;
         continue;
       }
       if (chatNumber < 0 || chatNumber > chatCount) {
-        std::cerr << "Вы ввели неправильные данные: " << std::endl;
+        std::cerr << "Вы ввели неправильные данные. Попробуйте еще раз." << std::endl;
         continue;
       } else
         break;
@@ -132,13 +196,14 @@ void mainMenuList2(ChatSystem &chatSystem) {
     }
 
     // здесь мы достаем из вектора количество непрочитанных сообщений для отображения на экране
+
     auto chatList = chatSystem.getActiveUser()->getUserChatList()->getChatFromList(); // weak указатель на вектор
     if (!chatList.empty()) {
       auto activeChat_weak = chatList[chatNumber - 1];
 
       auto activeChat_ptr = activeChat_weak.lock();
       if (activeChat_ptr) {
-        menuListOpenChat1(chatSystem, activeChat_ptr, chatNumber - 1);
+        menuListOpenChat1(chatSystem, activeChat_ptr, chatNumber - 1); // выводим чат и вызываем следующее меню
       } else
         std::cerr << "Ошибка. Нет такого чата." << std::endl;
     } else {
@@ -159,6 +224,7 @@ void mainMenuChoice(ChatSystem &chatSystem) { // вывод главного м�
   while (true) {
     std::cout << std::endl;
     std::cout << "Добрый день, пользователь " << chatSystem.getActiveUser()->getUserName() << std::endl;
+    std::cout << std::endl;
     std::cout << "Выберите пункт меню: " << std::endl;
     std::cout << "1 - Создать новый чат" << std::endl;
     std::cout << "2 - Показать список чатов" << std::endl;
@@ -191,7 +257,6 @@ void mainMenuChoice(ChatSystem &chatSystem) { // вывод главного м�
           std::cin.clear(); // сбрасываем флаг ошибки
           std::cin.ignore(std::numeric_limits<std::streamsize>::max(),
                           '\n'); // Очищаем буфер ввода
-
           mainMenuList2(chatSystem);
           exit = false;
           continue;
@@ -215,6 +280,8 @@ void inputNewMessage(ChatSystem &chatSystem, std::shared_ptr<Chat> chat, std::si
   std::string inputData;
 
   while (true) {
+    std::cin.clear(); // сбрасываем флаг ошибки
+
     std::getline(std::cin, inputData);
     if (inputData.empty()) {
       std::cout << "Вы ничего не ввели. Попробуйте еще раз." << std::endl;
@@ -224,8 +291,8 @@ void inputNewMessage(ChatSystem &chatSystem, std::shared_ptr<Chat> chat, std::si
     }
 
     std::vector<std::shared_ptr<User>> recipients;
-    for (const auto &user : chat->getParticipients()) {
-      auto user_ptr = user.lock();
+    for (const auto &participient : chat->getParticipients()) {
+      auto user_ptr = participient._user.lock();
       if (user_ptr) {
         if (user_ptr != chatSystem.getActiveUser()) {
           recipients.push_back(user_ptr);
@@ -235,9 +302,9 @@ void inputNewMessage(ChatSystem &chatSystem, std::shared_ptr<Chat> chat, std::si
 
     InitDataArray newMessageStruct(inputData, "15-04-2025, 15:00:00", chatSystem.getActiveUser(), recipients);
     addMessageToChat(newMessageStruct, chat);
-
-    std::cout << std::endl << "Тестовый вывод." << std::endl;
-    chat->printChat(chatSystem.getActiveUser());
+    break;
+    // std::cout << std::endl << "Тестовый вывод." << std::endl;
+    // chat->printChat(chatSystem.getActiveUser());
 
   } // recipients
   ;

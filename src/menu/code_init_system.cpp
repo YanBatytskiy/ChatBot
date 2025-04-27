@@ -13,7 +13,6 @@
 #include "user/user.h"
 #include "user/user_chat_list.h"
 
-#include <algorithm>
 #include <iostream>
 #include <memory>
 #include <vector>
@@ -38,38 +37,8 @@ InitDataArray::InitDataArray(std::string messageText, std::string timeStamp, std
  */
 
 void changeLastReadIndexForSender(const std::shared_ptr<User> &user, const std::shared_ptr<Chat> &chat) {
-  // у нас есть chat и есть слабая ссылка на юзера
-  // значит нам нужна из нее shared ссылка на юзера
-  // чтобы потом получить чатлист и добавить в вектор индексов прочитанных сообщений новое значение для отправителя
 
-  // зная юзера я могу взять shared ссылку на чатлист юзера
-  auto userChatList_ptr = user->getUserChatList();
-  auto chatList = userChatList_ptr->getChatFromList();
-
-  if (!userChatList_ptr) {
-    std::cerr << "[Ошибка] У пользователя нет списка чатов." << std::endl;
-    return;
-  }
-
-  // далее я могу найти индекс чата в чат листе
-  auto it = std::find_if(chatList.begin(), chatList.end(), [&chat](const std::weak_ptr<Chat> &weakp_ptr) {
-    auto chat_ptr = weakp_ptr.lock();
-
-    if ((!chat_ptr)) {
-      return false;
-    }
-    return chat_ptr == chat;
-  });
-
-  // ищем индекс чата в чатлисте
-  if (it != chatList.end()) {
-
-    std::size_t index = std::distance(chatList.begin(), it);
-
-    userChatList_ptr->setLastReadIndex(index, userChatList_ptr->getLastReadIndex()[index] + 1);
-  } else {
-    std::cerr << "[Ошибка] Чат не найден в списке пользователя." << std::endl;
-  }
+  chat->updateLastReadMessageIndex(user, chat->getMessages().size());
 }
 
 void addMessageToChat(const InitDataArray &initDataArray, std::shared_ptr<Chat> &chat) {
@@ -97,10 +66,10 @@ void addMessageToChat(const InitDataArray &initDataArray, std::shared_ptr<Chat> 
  */
 void systemInitTest(ChatSystem &_chatsystem) {
   // Создание пользователей
-  auto Alex2104_ptr = std::make_shared<User>("Alex2104", "Sasha", "12345");
-  auto Elena1510_ptr = std::make_shared<User>("Elena1510", "Elena", "12345");
-  auto Serg0101_ptr = std::make_shared<User>("Serg0101", "Sergei", "12345");
-  auto Vit2504_ptr = std::make_shared<User>("Vit2504", "Vitaliy", "12345");
+  auto Alex2104_ptr = std::make_shared<User>("a", "Sasha", "12345");
+  auto Elena1510_ptr = std::make_shared<User>("e", "Elena", "12345");
+  auto Serg0101_ptr = std::make_shared<User>("s", "Sergei", "12345");
+  auto Vit2504_ptr = std::make_shared<User>("v", "Vitaliy", "12345");
 
   Alex2104_ptr->showUserData();
   Elena1510_ptr->showUserData();
@@ -132,7 +101,9 @@ void systemInitTest(ChatSystem &_chatsystem) {
   participients.push_back(Elena1510_ptr);
   participients.push_back(Alex2104_ptr);
 
-  auto chat_ptr = std::make_shared<Chat>(participients);
+  auto chat_ptr = std::make_shared<Chat>();
+  chat_ptr->addParticipient(Elena1510_ptr);
+  chat_ptr->addParticipient(Alex2104_ptr);
 
   for (const auto &chatUser : participients) {
     if (auto chatUser_ptr = chatUser.lock()) {
@@ -162,7 +133,7 @@ void systemInitTest(ChatSystem &_chatsystem) {
   InitDataArray Elena_Alex3("Хорошо, как насчет кофе?", "01-04-2025,12:07:00", Elena1510_ptr, recipients);
   addMessageToChat(Elena_Alex3, chat_ptr);
 
-  Elena1510_ChatList_ptr->setLastReadIndex(0, 3);
+  changeLastReadIndexForSender(Elena1510_ptr, chat_ptr);
 
   chat_ptr->printChat(Elena1510_ptr);
 
@@ -177,7 +148,10 @@ void systemInitTest(ChatSystem &_chatsystem) {
   participients.push_back(Alex2104_ptr);
   participients.push_back(Serg0101_ptr);
 
-  chat_ptr = std::make_shared<Chat>(participients);
+  chat_ptr = std::make_shared<Chat>();
+  chat_ptr->addParticipient(Elena1510_ptr);
+  chat_ptr->addParticipient(Alex2104_ptr);
+  chat_ptr->addParticipient(Serg0101_ptr);
 
   for (const auto &chatUser : participients) {
     if (auto chatUser_ptr = chatUser.lock()) {
@@ -223,7 +197,8 @@ void systemInitTest(ChatSystem &_chatsystem) {
   InitDataArray Elena_Alex_Serg5("В кино!", "01-04-2025,13:33:00", Serg0101_ptr, recipients);
   addMessageToChat(Elena_Alex_Serg5, chat_ptr);
 
-  Elena1510_ChatList_ptr->setLastReadIndex(1, 4);
+  chat_ptr->updateLastReadMessageIndex(Elena1510_ptr, chat_ptr->getMessages().size()-1);
+//   changeLastReadIndexForSender(Elena1510_ptr, chat_ptr);
 
   chat_ptr->printChat(Elena1510_ptr);
 }
