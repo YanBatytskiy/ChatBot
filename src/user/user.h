@@ -116,4 +116,6 @@ public:
    * @param user Ссылка на пользователя, для которого печатается список чатов
    */
   void printChatList(const std::shared_ptr<User> &user) const;
-};
+
+
+  };

@@ -4,14 +4,19 @@
  * @version 1.0
  * @date 2025
  */
+#include "menu/code_main_menu.h"
+#include "exception/validation_exception.h"
 #include "menu/code_init_system.h"
 #include "system/chat_system.h"
 #include "user/user_chat_list.h"
 
+#include <algorithm>
+#include <any>
 #include <cctype>
 #include <iostream>
 #include <limits>
 #include <ostream>
+#include <stdexcept>
 
 void inputNewMessage(ChatSystem &chatSystem, const std::shared_ptr<Chat> chat, std::size_t unReadCountIndex);
 
@@ -59,9 +64,78 @@ short authMenu() { // вывод главного меню
 //
 //
 
-void menuListOpenChat1(ChatSystem &chatSystem, const std::shared_ptr<Chat> &chat, std::size_t unReadCountIndex) {
+void mainMenuNewChat2(ChatSystem &chatSystem) { // создание нового сообщения
 
-  // ДОДЕЛАТЬ
+  std::string inputData;
+  std::string userChoice;
+  bool exit = true;
+
+  while (exit) {
+    std::cout << "Хотите: " << std::endl
+              << "1. Воспользоваться поиском" << std::endl
+              << "2. Вывести весь список пользователей?" << std::endl
+              << "3. Отправить сообщение всем пользователям" << std::endl
+              << "0. Для выхода в предыдущее меню" << std::endl;
+
+    std::getline(std::cin, userChoice);
+
+    try {
+
+      if (userChoice.empty())
+        throw EmptyInputException();
+
+      if (userChoice == "0")
+        return;
+
+      if (userChoice != "1" && userChoice != "2" && userChoice != "3")
+        throw IndexOutOfRangeException(userChoice);
+
+      if (userChoice == "3") {
+        std::cout << "3. Отправить сообщение всем пользователям. Under constraction." << std::endl;
+        continue;
+      }
+
+      if (userChoice == "1") {
+        chatSystem.findUser("1");
+        continue;
+      }
+
+      // запомнили номер активного пользователя
+      auto activeUserIndex = chatSystem.showUserList(false);
+
+      // получаем список получателей через ввод списка
+      std::cout << "Введите номера пользователей через запятую или 0 для отмены: " << std::endl;
+
+      getline(std::cin, inputData);
+
+      if (inputData.empty())
+        throw EmptyInputException();
+
+      if (inputData == "0")
+        continue;
+
+      for (const auto &exactChar : inputData) {
+        if (!std::isdigit(exactChar) && static_cast<unsigned char>(exactChar) != ',') {
+          throw IndexOutOfRangeException(exactChar);
+        }
+      }
+
+      exit = false;
+      // проверяем все символы на корректность
+
+    } catch (const ValidationException &ex) { // блок try
+      std::cout << " ! " << ex.what() << " Попробуйте еще раз." << std::endl;
+      continue;
+    }
+  } // first while
+}
+//
+//
+//
+
+void menuList2OpenChat1(ChatSystem &chatSystem, const std::shared_ptr<Chat> &chat /*, std::size_t unReadCountIndex*/) {
+
+  // ДОДЕЛАТЬ в том числе исключения
 
   bool exit = true;
   while (exit) {
@@ -95,7 +169,7 @@ void menuListOpenChat1(ChatSystem &chatSystem, const std::shared_ptr<Chat> &chat
     while (exit2) {
       std::getline(std::cin, userChoice);
       if (userChoice.empty()) {
-        std::cerr << "Вы ничего не ввели. Попробуйте еще раз." << std::endl;
+        throw EmptyInputException();
         continue;
       } else if (userChoice == "0") {
         exit = false;
@@ -114,10 +188,12 @@ void menuListOpenChat1(ChatSystem &chatSystem, const std::shared_ptr<Chat> &chat
         continue;
       };
 
+      auto unReadCountIndex = chat->getLastReadMessageIndex(chatSystem.getActiveUser());
       switch (userChoiceNumber) {
       case 1:
         inputNewMessage(chatSystem, chat, unReadCountIndex);
         chat->updateLastReadMessageIndex(chatSystem.getActiveUser(), messageCount + 1);
+
         std::cout << std::endl;
         chat->printChat(chatSystem.getActiveUser());
         std::cout << std::endl;
@@ -145,70 +221,71 @@ void menuListOpenChat1(ChatSystem &chatSystem, const std::shared_ptr<Chat> &chat
 //
 //
 
-void mainMenuList2(ChatSystem &chatSystem) {
+void mainMenuList2(ChatSystem &chatSystem) { // показать список чатов
 
-  auto chatCount = chatSystem.getActiveUser()->getUserChatList()->getChatFromList().size();
+  auto chatCount = chatSystem.getActiveUser()
+                       ->getUserChatList()
+                       ->getChatFromList()
+                       .size(); // количество чатов у пользователя
+
+  std::cout << std::endl;
+
+  chatSystem.getActiveUser()->printChatList(chatSystem.getActiveUser()); // определяем текущего пользователя
+  std::cout << std::endl;
+
+  if (chatSystem.getActiveUser()->getUserChatList()->getChatFromList().empty()) {
+    std::cout << "У пользователя пока нет чатов" << std::endl;
+    return;
+  }
+
+  std::string userChoice;
+  int userChoiceNumber;
+  bool exit2 = true;
 
   while (true) {
-    std::cout << std::endl;
 
-	
-    chatSystem.getActiveUser()->printChatList(chatSystem.getActiveUser());
-    std::cout << std::endl << "всего: " << chatCount;
-    std::cout << std::endl;
-
-    if (chatSystem.getActiveUser()->getUserChatList()->getChatFromList().empty()) return;
-	
     std::cout << "Выберите пункт меню: " << std::endl;
     std::cout << "От 1 до " << chatCount << " - Чтобы открыть чат введите его номер (всего " << chatCount
               << " чата(ов)): " << std::endl;
     std::cout << "f - Поиск по чатам." << std::endl;
     std::cout << "0 - Выйти в предыдущее меню" << std::endl;
 
-    std::string userChoiceList2;
-    std::size_t chatNumber;
-
-    while (true) {
-      std::getline(std::cin, userChoiceList2);
-      if (userChoiceList2.empty()) {
-        std::cerr << "Вы ничего не ввели. Попробуйте еще раз.";
-        continue;
-      }
+    while (exit2) {
+      std::getline(std::cin, userChoice);
 
       try {
-        chatNumber = std::stoull(userChoiceList2);
-      } catch (const std::exception &e) {
-        std::cerr << "Вы ввели неправильные данные. Попробуйте еще раз." << std::endl;
+
+        if (userChoice.empty())
+          throw EmptyInputException();
+
+        if (userChoice == "0")
+          return;
+
+        if (userChoice == "f") {
+          std::cout << "Under constraction." << std::endl;
+          exit2 = false;
+          continue;
+        }
+
+        userChoiceNumber = parseGetlineToInt(userChoice);
+
+        if (userChoiceNumber < 0 || userChoiceNumber > static_cast<int>(chatCount))
+          throw IndexOutOfRangeException(userChoice);
+
+        // здесь мы достаем из вектора количество непрочитанных сообщениотображения на экране
+        auto chatList = chatSystem.getActiveUser()->getUserChatList()->getChatFromList(); // weak указатель на вектор
+
+        auto activeChat_weak = chatList[userChoiceNumber - 1];
+        auto activeChat_ptr = activeChat_weak.lock();
+
+        if (!activeChat_ptr)
+          throw ChatNotFoundException();
+        else
+          menuList2OpenChat1(chatSystem, activeChat_ptr);
+      } catch (const ValidationException &ex) {
+        std::cout << " ! " << ex.what() << " Попробуйте еще раз." << std::endl;
         continue;
-      }
-      if (chatNumber < 0 || chatNumber > chatCount) {
-        std::cerr << "Вы ввели неправильные данные. Попробуйте еще раз." << std::endl;
-        continue;
-      } else
-        break;
-    } // второй while
-
-    if (chatNumber == 0) {
-      return;
-    }
-    if (userChoiceList2 == "f") {
-      std::cout << "Under constraction." << std::endl;
-    }
-
-    // здесь мы достаем из вектора количество непрочитанных сообщений для отображения на экране
-
-    auto chatList = chatSystem.getActiveUser()->getUserChatList()->getChatFromList(); // weak указатель на вектор
-    if (!chatList.empty()) {
-      auto activeChat_weak = chatList[chatNumber - 1];
-
-      auto activeChat_ptr = activeChat_weak.lock();
-      if (activeChat_ptr) {
-        menuListOpenChat1(chatSystem, activeChat_ptr, chatNumber - 1); // выводим чат и вызываем следующее меню
-      } else
-        std::cerr << "Ошибка. Нет такого чата." << std::endl;
-    } else {
-      std::cerr << "Ошибка. Нет чатов у Пользоывателя." << std::endl;
-      continue;
+      };
     }
 
   } // первый while
@@ -218,8 +295,28 @@ void mainMenuList2(ChatSystem &chatSystem) {
 //
 //
 
+int parseGetlineToInt(const std::string &str) { // конвертация из string в int
+  try {
+    long long value = std::stoll(str);
+
+    if (value < std::numeric_limits<int>::min() || value > std::numeric_limits<int>::max()) {
+      throw std::out_of_range("value exceeds int range");
+    }
+    return static_cast<int>(value);
+
+  } catch (const std::invalid_argument &) {
+    throw NonDigitalCharacterException();
+  } catch (const std::out_of_range &) {
+    throw IndexOutOfRangeException(str);
+  }
+}
+
 void mainMenuChoice(ChatSystem &chatSystem) { // вывод главного меню
-  short userChoiceMain;
+
+  // доделать - продумать передачу по конст ссылке ChatSystem и дополнительный аргумент для изменеиня
+
+  int userChoiceNumber;
+  std::string userChoice;
 
   while (true) {
     std::cout << std::endl;
@@ -232,47 +329,52 @@ void mainMenuChoice(ChatSystem &chatSystem) { // вывод главного м�
     std::cout << "4 - Показать Профиль пользователя" << std::endl;
     std::cout << "0 - Выйти в предыдущее меню" << std::endl;
 
-    bool exit = true;
-    while (exit) {
-      if (!(std::cin >> userChoiceMain)) {
-        std::cout << "Ошибка ввода. Попробуйте еще раз." << std::endl;
-        std::cin.clear(); // сбрасываем флаг ошибки
-        std::cin.ignore(std::numeric_limits<std::streamsize>::max(),
-                        '\n'); // Очищаем буфер ввода
-        continue;
-      }
+    bool exit2 = true;
+    while (exit2) {
+      std::getline(std::cin, userChoice);
+      try {
 
-      if (userChoiceMain < 0 || userChoiceMain > 4) {
-        std::cout << "Вы ввели неправильное число. Попробуйте еще раз." << std::endl;
-        continue;
-      } else {
-        switch (userChoiceMain) {
-        case 0:
-          return;
-          break; // case 0 MainMenu
-        case 1:
-          std::cout << "Under constraction." << std::endl;
-          break; // case 1 MainMenu
-        case 2:
-          std::cin.clear(); // сбрасываем флаг ошибки
-          std::cin.ignore(std::numeric_limits<std::streamsize>::max(),
-                          '\n'); // Очищаем буфер ввода
-          mainMenuList2(chatSystem);
-          exit = false;
-          continue;
-          break; // case 2 MainMenu
-        case 3:
-          std::cout << "Under constraction." << std::endl;
-          break; // case 3 MainMenu
-        case 4:
-          std::cout << "Under constraction." << std::endl;
-          break; // case 4 MainMenu
-        default:
-          break; // default MainMenu
+        if (userChoice.empty()) {
+          throw EmptyInputException();
         }
+
+        if (userChoice == "0")
+          return;
+
+        userChoiceNumber = parseGetlineToInt(userChoice);
+
+        if (userChoiceNumber < 0 || userChoiceNumber > 4)
+          throw IndexOutOfRangeException(userChoice);
+        else {
+
+          switch (userChoiceNumber) {
+          case 1:
+            mainMenuNewChat2(chatSystem);
+            exit2 = false;
+            continue;
+          //   break; // case 1 MainMenu
+          case 2:
+            mainMenuList2(chatSystem);
+            exit2 = false;
+            continue;
+            break; // case 2 MainMenu
+          case 3:
+            std::cout << "Показать список папок - Under constraction." << std::endl;
+            break; // case 3 MainMenu
+          case 4:
+            std::cout << "Показать Профиль пользователя -Under constraction." << std::endl;
+            break; // case 4 MainMenu
+          default:
+            break; // default MainMenu
+          } // switch
+        } // else
+      } // try
+      catch (const ValidationException &ex) {
+        std::cout << " ! " << ex.what() << " Попробуйте еще раз." << std::endl;
+        continue;
       }
-    }
-  } // second
+    } // second
+  }
 }
 
 void inputNewMessage(ChatSystem &chatSystem, std::shared_ptr<Chat> chat, std::size_t unReadCountIndex) {
@@ -284,7 +386,7 @@ void inputNewMessage(ChatSystem &chatSystem, std::shared_ptr<Chat> chat, std::si
 
     std::getline(std::cin, inputData);
     if (inputData.empty()) {
-      std::cout << "Вы ничего не ввели. Попробуйте еще раз." << std::endl;
+      throw EmptyInputException();
       continue;
     } else if (inputData == "0") {
       return;

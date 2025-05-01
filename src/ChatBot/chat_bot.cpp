@@ -6,7 +6,7 @@
 
 int main() {
 
-  // создаем ChatSystem1
+  // создаем ChatSystem
   ChatSystem chatSystem;
 
   systemInitTest(chatSystem);
@@ -38,33 +38,6 @@ int main() {
     case 2: { // вход пользователя в систему
       if (userLoginInsystem(chatSystem))
         mainMenuChoice(chatSystem);
-      //
-      //
-
-      //   switch (userChoiceMainMenu) {
-      //   case 0:
-      //     break; // case 0 MainMenu
-      //   case 1:
-      //     std::cout << "Under constraction." << std::endl;
-      //     break; // case 1 MainMenu
-      //   case 2:
-      //     std::cin.clear(); // сбрасываем флаг ошибки
-      //     std::cin.ignore(std::numeric_limits<std::streamsize>::max(),
-      //                     '\n'); // Очищаем буфер ввода
-
-      //     mainMenuList2(chatSystem);
-      //     break; // case 2 MainMenu
-      //   case 3:
-      //     std::cout << "Under constraction." << std::endl;
-      //     break; // case 3 MainMenu
-      //   case 4:
-      //     std::cout << "Under constraction." << std::endl;
-      //     break; // case 4 MainMenu
-      //   default:
-      //     break; // default MainMenu
-      //   }
-      //
-      //
       break; // case 2 AuthMenu
     }
     default:

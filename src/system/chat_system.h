@@ -1,6 +1,7 @@
 #pragma once
 #include "chat/chat.h"
 #include "user/user.h"
+#include <cstddef>
 #include <memory>
 #include <vector>
 
@@ -32,4 +33,8 @@ public:
   // removers
   void eraseUser(const std::shared_ptr<User> &user);
   void eraseChat(const std::shared_ptr<Chat> &chat);
+
+  // additional methods
+  std::size_t showUserList(const bool showActiveUser); // вывод на экрын списка пользователей
+  void findUser(const std::string userName);           // поиск пользователя
 };

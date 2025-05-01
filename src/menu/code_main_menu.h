@@ -34,7 +34,12 @@ short authMenu(); // вывод главного меню
  * - 2 — Вход в Чат
  * - 0 — Завершение программы
  */
-short mainMenuChoice(ChatSystem &chatSystem); // вывод главного меню
+
+int parseGetlineToInt(const std::string &str); // конвертация из string в int
+                                               //
+void mainMenuChoice(ChatSystem &chatSystem);   // вывод главного меню
+
+void mainMenuNewChat2(ChatSystem &chatSystem); // создание нового сообщения
 
 void mainMenuList2(ChatSystem &chatSystem);
 
@@ -43,3 +48,5 @@ void menuListOpenChat1(ChatSystem &chatSystem, const std::shared_ptr<Chat> &chat
 void menuListFindChat2(ChatSystem &chatSystem);
 
 void inputNewMessage(ChatSystem &chatSystem, std::shared_ptr<Chat> chat, std::size_t unReadCountIndex);
+
+void menuList2OpenChat1(ChatSystem &chatSystem, const std::shared_ptr<Chat> &chat /*, std::size_t unReadCountIndex*/);

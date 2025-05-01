@@ -111,39 +111,52 @@ void User::showUserData() const {
  * @param user Ссылка на пользователя, для которого нужно напечатать список чатов
  */
 void User::printChatList(const std::shared_ptr<User> &user) const {
-// ДОДЕЛАТЬ ВЫВОД УДАЛЕННОГО ПОЛЬЗОВАТЕЛЯ В СПИСКЕ
-  std::cout << std::endl << "Список чатов пользователя " << user->_userName << " :" << std::endl;
+  // ДОДЕЛАТЬ ВЫВОД УДАЛЕННОГО ПОЛЬЗОВАТЕЛЯ В СПИСКЕ а также количество новых сообщений в списке
 
   // достаем чатлист
   const auto &chatList = user->getUserChatList()->getChatFromList();
 
   if (chatList.empty()) {
-    std::cout << "У пользователя нет чатов." << std::endl;
+    std::cout << "У пользователя " << user->_userName << " нет чатов." << std::endl;
     return;
   }
+  std::cout << std::endl
+            << "Всего чатов = " << user->getUserChatList()->getChatCount() << ". Список чатов пользователя "
+            << user->_userName << " :" << std::endl;
 
   std::size_t index = 1;
+  std::size_t activeUserMessageCount;
+  std::size_t totalMessages;
 
   // перебираем чаты в списке
   for (const auto &weakChat : chatList) {
-    if (auto Chat_ptr = weakChat.lock()) {
-      std::cout << index << ". ";
-
-      // перебираем участников чата
-      for (const auto &participient : Chat_ptr->getParticipients()) {
-        auto user_ptr = participient._user.lock();
-        if (user_ptr) {
-          if (user_ptr != user) {
-            std::cout << user_ptr->getUserName() << "; ";
-          }
-        } else {
-          std::cout << "удал. пользоыватель. ";
-        }
-      }
+	  if (auto chat_ptr = weakChat.lock()) {
+		std::cout << std::endl;
+		std::cout << index << ". ";
+		totalMessages = chat_ptr->getMessages().size();
+		
+		// перебираем участников чата
+		for (const auto &participient : chat_ptr->getParticipients()) {
+			auto user_ptr = participient._user.lock();
+			if (user_ptr) {
+				if (user_ptr != user) {
+					std::cout << user_ptr->getUserName() << "; ";
+				} else {
+					activeUserMessageCount = participient._lastReadMessageIndex;
+				};
+			} else {
+				std::cout << "удал. пользоыватель";
+			}
+		}
     } else {
-      //   std::cout << "Чат удален." << std::endl;
+		//   std::cout << "Чат удален." << std::endl;
     }
-    std::cout << std::endl;
     ++index;
-  }
+	
+    // вывод на печать количества новых сообщений
+    if (totalMessages > activeUserMessageCount)
+	std::cout << "новых сообщений - " << totalMessages - activeUserMessageCount;
+}
+
+std::cout << std::endl;
 }
