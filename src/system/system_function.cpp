@@ -1,5 +1,6 @@
 #include "chat/chat.h"
 #include "exception/validation_exception.h"
+#include "message/message_content_struct.h"
 #include "system/chat_system.h"
 
 #include "menu/0_init_system.h"
@@ -41,37 +42,63 @@ std::size_t parseGetlineToSizeT(const std::string &str) { // конвертац�
   }
 }
 
-void inputNewMessage(ChatSystem &chatSystem, std::shared_ptr<Chat> chat, std::size_t unReadCountIndex) {
+void changeLastReadIndexForSender(const std::shared_ptr<User> &user, const std::shared_ptr<Chat> &chat) {
+
+	chat->updateLastReadMessageIndex(user, chat->getMessages().size());
+  }
+  
+  void addMessageToChat(const InitDataArray &initDataArray, std::shared_ptr<Chat> &chat) {
+  
+	  std::vector<std::shared_ptr<IMessageContent>> iMessageContent;
+	  TextContent textContent(initDataArray._messageText);
+	  MessageContent<TextContent> messageContentText(textContent);
+	  iMessageContent.push_back(std::make_shared<MessageContent<TextContent>>(messageContentText));
+	
+	  try {
+		if (!initDataArray._sender) {
+		  throw UnknownException(" Отправитель отсутствует. Сообщение не будет создано. addMessageToChat");
+		} else {
+		  Message message(iMessageContent, initDataArray._sender, initDataArray._timeStamp);
+	
+		  chat->addMessage(std::make_shared<Message>(message));
+	
+		  changeLastReadIndexForSender(initDataArray._sender, chat);
+		};
+	  } catch (const ValidationException &ex) {
+		std::cout << " ! " << ex.what() << std::endl;
+	  }
+  }
+  
+
+bool inputNewMessage(ChatSystem &chatSystem, std::shared_ptr<Chat> chat) {
   std::cout << std::endl << "Наберите новое сообщение либо 0 для выхода:" << std::endl;
   std::string inputData;
 
   while (true) {
-    std::cin.clear(); // сбрасываем флаг ошибки
+    try {
+      std::getline(std::cin, inputData);
 
-    std::getline(std::cin, inputData);
-    if (inputData.empty()) {
-      throw EmptyInputException();
-      continue;
-    } else if (inputData == "0") {
-      return;
-    }
+      if (inputData.empty())
+        throw EmptyInputException();
 
-    std::vector<std::shared_ptr<User>> recipients;
-    for (const auto &participient : chat->getParticipients()) {
-      auto user_ptr = participient._user.lock();
-      if (user_ptr) {
-        if (user_ptr != chatSystem.getActiveUser()) {
-          recipients.push_back(user_ptr);
+      if (inputData == "0")
+        return false;
+
+      std::vector<std::shared_ptr<User>> recipients;
+      for (const auto &participant : chat->getParticipants()) {
+        auto user_ptr = participant._user.lock();
+        if (user_ptr) {
+          if (user_ptr != chatSystem.getActiveUser())
+            recipients.push_back(user_ptr);
         }
       }
+      InitDataArray newMessageStruct(inputData, "15-04-2025, 15:00:00", chatSystem.getActiveUser(), recipients);
+      addMessageToChat(newMessageStruct, chat);
+      return true;
+    } // try
+    catch (const ValidationException &ex) {
+      std::cout << " ! " << ex.what() << " Попробуйте еще раз." << std::endl;
+      continue;
     }
-
-    InitDataArray newMessageStruct(inputData, "15-04-2025, 15:00:00", chatSystem.getActiveUser(), recipients);
-    addMessageToChat(newMessageStruct, chat);
-    break;
-    // std::cout << std::endl << "Тестовый вывод." << std::endl;
-    // chat->printChat(chatSystem.getActiveUser());
-
-  } // recipients
-  ;
+  } // while
 };

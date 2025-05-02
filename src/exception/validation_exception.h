@@ -41,6 +41,19 @@ public:
 };
 
 class ChatNotFoundException : public ValidationException {
+public:
+  ChatNotFoundException() : ValidationException("!!!Ошибка. Чат не найден. Обратитесь к администратору") {};
+};
+
+class UnknownException : public ValidationException {
+public:
+  UnknownException(const std::string &str) : ValidationException("!!!Неизвестная ошибка. ") {};
+};
+class BadWeakException : public ValidationException {
+public:
+  BadWeakException(const std::string &str) : ValidationException("!!!Потеря weak_ptr. ") {};
+};
+class UserNotInListException : public ValidationException {
 	public:
-	ChatNotFoundException() : ValidationException("!!!Ошибка. Чат не найден. Обратитесь к администратору") {};
+	UserNotInListException(const std::string &str) : ValidationException("!!!Пользователя нет среди участников чата.") {};
 	};

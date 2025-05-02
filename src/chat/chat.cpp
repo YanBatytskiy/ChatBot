@@ -1,21 +1,22 @@
 #include "chat/chat.h"
+#include "exception/validation_exception.h"
 #include <algorithm>
 #include <iostream>
 // #include <iterator>
 
 // Chat::Chat(const std::vector<std::shared_ptr<User>>
-//                &participients) { // constructor for an empty chat. not initilize_messagess becouse
+//                &participants) { // constructor for an empty chat. not initilize_messagess becouse
 //   // constructor of vector will make it empty automatically
-//   for (const auto &user : participients) {
+//   for (const auto &user : participants) {
 // }
 // };
 
-// add participient to structure
-void Chat::addParticipient(const std::shared_ptr<User> &user) {
-  Participient participient;
-  participient._user = user;
-  participient._lastReadMessageIndex = 0;
-  _participients.push_back(participient);
+// add participant to structure
+void Chat::addParticipant(const std::shared_ptr<User> &user) {
+  Participant participant;
+  participant._user = user;
+  participant._lastReadMessageIndex = 0;
+  _participants.push_back(participant);
 }
 
 // add message to chat
@@ -24,18 +25,18 @@ void Chat::addMessage(const std::shared_ptr<Message> &message) { _messages.push_
 // get message from chat
 const std::vector<std::shared_ptr<Message>> &Chat::getMessages() const { return _messages; }
 
-// get participients of the chat
-const std::vector<Participient> &Chat::getParticipients() const { return _participients; }
+// get participants of the chat
+const std::vector<Participant> &Chat::getParticipants() const { return _participants; }
 
-// get LastReadMessageIndex of the chat for participient
+// get LastReadMessageIndex of the chat for participant
 std::size_t Chat::getLastReadMessageIndex(const std::shared_ptr<User> &user) const {
 
-  const auto &participients = _participients;
-  auto it = std::find_if(participients.begin(), participients.end(), [&user](const Participient &participient) {
-    auto user_ptr = participient._user.lock();
+  const auto &participants = _participants;
+  auto it = std::find_if(participants.begin(), participants.end(), [&user](const Participant &participant) {
+    auto user_ptr = participant._user.lock();
     return user_ptr && (user_ptr == user);
   });
-  if (it != participients.end()) {
+  if (it != participants.end()) {
     return it->_lastReadMessageIndex;
   } else {
     std::cerr << "[Ошибка] Пользователь не найден среди участников чата." << std::endl;
@@ -53,29 +54,29 @@ void Chat::printChat(const std::shared_ptr<User> &currentUser) {
     std::cout << "Cообщуний нет." << std::endl;
 }
 
-// remove Participient from chat
-void Chat::removeParticipient(const std::shared_ptr<User> &user) {
+// remove Participant from chat
+void Chat::removeParticipant(const std::shared_ptr<User> &user) {
   // ДОДЕЛАТЬ
-};
+}
 
 void Chat::updateLastReadMessageIndex(const std::shared_ptr<User> &user, std::size_t newLastReadMessageIndex) {
 
-  auto &participients = _participients; // взяли вектор участников чата
-  auto it = std::find_if(participients.begin(), participients.end(), [&user](const Participient &partisipient) {
+  // нашли нужного пользователя
+  auto it = std::find_if(_participants.begin(), _participants.end(), [&user](const Participant &partisipient) {
     auto user_ptr = partisipient._user.lock();
 
-    return user_ptr && (user_ptr == user);
+    return user_ptr && (user_ptr->getLogin() == user->getLogin());
   });
+  try {
+    if (it != _participants.end())
+      it->_lastReadMessageIndex = newLastReadMessageIndex;
+    else
+      throw UserNotInListException(" updateLastReadMessageIndex");
 
-  if (it != participients.end()) {
-    it->_lastReadMessageIndex = newLastReadMessageIndex;
-  } else {
-    std::cerr << "[Ошибка] Пользователь не найден среди участников чата." << std::endl;
+  } catch (const ValidationException &ex) {
+    std::cout << " ! " << ex.what() << std::endl;
   }
-};
+}
 
-/**
- * @brief Отметить все сообщения во всех чатах как прочитанные.
- */
 void Chat::makeAllRead() {};
 // ДОДЕЛАТЬ

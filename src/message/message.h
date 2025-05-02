@@ -35,11 +35,11 @@ public:
   const std::string &getTimeStamp() const;
 
   // setters
-  // add content to the message
   void addContent(const std::shared_ptr<IMessageContent> &content);
 
   void printMessage(const std::shared_ptr<User> &currentUser);
 
+  // add content to the message
   // delete message will be realized further
 
   // edit message will be realized further

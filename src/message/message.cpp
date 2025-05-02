@@ -63,6 +63,9 @@ void Message::printMessage(const std::shared_ptr<User> &currentUser) {
 
   std::cout << "\033[0m";
 };
+//
+//
+//
 
 // delete message will be realized further
 

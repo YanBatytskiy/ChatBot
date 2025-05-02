@@ -56,7 +56,7 @@ void loginMenu_2EditChat(ChatSystem &chatSystem, const std::shared_ptr<Chat> &ch
 
         switch (userChoiceNumber) {
         case 1:
-          inputNewMessage(chatSystem, chat, unReadCount);
+          inputNewMessage(chatSystem, chat);
           chat->updateLastReadMessageIndex(chatSystem.getActiveUser(), messageCount + 1);
           std::cout << std::endl;
 
@@ -150,6 +150,7 @@ void loginMenu_2ChatList(ChatSystem &chatSystem) { // показать спис�
           throw ChatNotFoundException();
         else
           loginMenu_2EditChat(chatSystem, activeChat_ptr);
+        return;
       } catch (const ValidationException &ex) {
         std::cout << " ! " << ex.what() << " Попробуйте еще раз." << std::endl;
         continue;

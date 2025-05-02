@@ -1,23 +1,31 @@
 #include "menu/2_1_new_chat_menu.h"
+#include "chat/chat.h"
+#include "exception/login_exception.h"
 #include "exception/validation_exception.h"
 #include "system/system_function.h"
 #include "user/user.h"
+#include "user/user_chat_list.h"
 #include <algorithm>
 #include <iostream>
 #include <string>
 #include <vector>
 
-void LoginMenu_1NewChatMakeParticipients(ChatSystem &chatSystem,
-                                         bool messageToAll) { // создение нового сообщения путем выбора пользователей
+void LoginMenu_1NewChatMakeParticipants(ChatSystem &chatSystem, std::shared_ptr<Chat> &chat,
+                                        std::size_t activeUserIndex,
+                                        bool messageToAll) { // создение нового сообщения путем выбора пользователей
 
   std::string inputData;
   std::string userChoice;
 
-  // запомнили номер активного пользователя
-  auto activeUserIndex = chatSystem.showUserList(false);
-
   // выбираем - сообщение всем пользователям или нет
   if (messageToAll) {
+
+    // заполняем вектор участников чата
+    chat->addParticipant(chatSystem.getActiveUser());
+    for (const auto &user : chatSystem.getUsers())
+      if (user != chatSystem.getActiveUser()) {
+        chat->addParticipant(user);
+      }
 
     return;
   }
@@ -88,33 +96,25 @@ void LoginMenu_1NewChatMakeParticipients(ChatSystem &chatSystem,
       for (const auto &rep : recipientIndex)
         std::cout << rep << ", ";
 
+      // проверка временная
       std::cout << std::endl;
       for (std::size_t i = 1; i <= recipientIndex.size(); ++i) {
         std::cout << chatSystem.getUsers()[recipientIndex[i - 1]]->getLogin() << ", ";
       }
 
-      // создаем вектора получателей и участников нового чата
-      std::vector<std::shared_ptr<User>> recipients;
-      std::vector<std::weak_ptr<User>> participients;
+      // добавляем отправителя в вектор участников
+      chat->addParticipant(chatSystem.getActiveUser());
 
-      participients.push_back(chatSystem.getActiveUser()); // добавляем отправителя в вектор участников
-
+      // заполняем вектор вектор участников
       for (const auto &recipient : recipientIndex) {
-        recipients.push_back(chatSystem.getUsers()[recipient]);
-        participients.push_back(chatSystem.getUsers()[recipient]);
+        chat->addParticipant(chatSystem.getUsers()[recipient]);
       }
 
       // проверки
-      std::cout << std::endl;
-      for (const auto &user : recipients) {
-        std::cout << user->getLogin() << ", ";
-      }
-
-      // проверки
-      std::cout << std::endl;
-      for (const auto &user : participients) {
-        auto user_ptr = user.lock();
-        std::cout << user_ptr->getLogin() << ", ";
+      std::cout << "Получатели сообщений: " << std::endl;
+      for (const auto &user : chat->getParticipants()) {
+        auto user_ptr = user._user.lock();
+        std::cout << user_ptr->getLogin() << " ака " << user_ptr->getUserName() << std::endl;
       }
     } // try
     catch (const ValidationException &ex) {
@@ -127,9 +127,15 @@ void LoginMenu_1NewChatMakeParticipients(ChatSystem &chatSystem,
 //
 //
 //
+// общая функция для отправки сообщения в новый чат тремя способами
+void CreateAndSendNewChat(ChatSystem &chatSystem, std::size_t activeUserIndex, bool sendToAll) {
+
+};
+//
+//
+//
 void LoginMenu_1NewChat(ChatSystem &chatSystem) { // создание нового сообщения
 
-  std::string inputData;
   std::string userChoice;
   size_t userChoiceNumber;
   bool exit = true;
@@ -164,11 +170,58 @@ void LoginMenu_1NewChat(ChatSystem &chatSystem) { // создание новог
         break; // case 1
       }
       case 2: { // 2. Вывести весь список пользователей
-        LoginMenu_1NewChatMakeParticipients(chatSystem, false);
-        break; // case 2
+
+        // запомнили номер активного пользователя
+        auto activeUserIndex = chatSystem.showUserList(false);
+
+        // создали новый чат
+        auto chat = std::make_shared<Chat>();
+
+        // определили получателей и участников чата, чат возврашается с заполненным массивом участников, а получатели
+        // заполняются в inputNewMessage
+        LoginMenu_1NewChatMakeParticipants(chatSystem, chat, activeUserIndex, false);
+
+        std::cout << std::endl << "Вот твой чат. В нем всего 0 сообщения(ий). " << std::endl;
+
+        bool exitCase2 = true;
+        std::size_t unReadCount = 0;
+
+        while (exitCase2) {
+          try {
+            if (inputNewMessage(chatSystem, chat) == false) { // пользователь решмил не вводить сообщение
+              exitCase2 = false;
+            } else { // пользователь ввел сообщение
+              if (unReadCount == 0) {
+                // добавили в головную систему чтобы не потерять чат при выходе из метода
+                chatSystem.addChat(chat);
+
+                // добавили каждому участнику чат в чат-лист
+                for (const auto &user : chat->getParticipants()) {
+                  auto user_ptr = user._user.lock();
+                  if (user_ptr) {
+                    user_ptr->getUserChatList()->addChat(chat);
+                  } else
+                    throw BadWeakException("LoginMenu_1NewChat");
+                }
+              }
+              ++unReadCount;
+
+              // проверки
+              chat->printChat(chatSystem.getActiveUser());
+              // std::cout << std::endl;
+            }; // else
+          } // try
+          catch (const ValidationException &ex) {
+            std::cout << " ! " << ex.what() << std::endl;
+          }
+        } // while case 2
+        exit = false; // выход в верхнее меню так как новый чат уже не новый
+        break;        // case 2
       }
       case 3: {
-        LoginMenu_1NewChatMakeParticipients(chatSystem, true);
+
+        auto chat_ptr = std::make_shared<Chat>();
+        LoginMenu_1NewChatMakeParticipants(chatSystem, chat_ptr, 0, true);
         break; // case 3
       }
       default:
@@ -179,6 +232,5 @@ void LoginMenu_1NewChat(ChatSystem &chatSystem) { // создание новог
       std::cout << " ! " << ex.what() << " Попробуйте еще раз." << std::endl;
       continue;
     }
-    exit = false;
   } // while
 }

@@ -7,8 +7,9 @@
 
 #include "menu/0_init_system.h"
 #include "chat/chat.h"
-#include "message/message.h"
-#include "message/message_content.h"
+#include "exception/validation_exception.h"
+#include "system/system_function.h"
+
 #include "message/message_content_struct.h"
 #include "user/user.h"
 #include "user/user_chat_list.h"
@@ -35,29 +36,6 @@ InitDataArray::InitDataArray(std::string messageText, std::string timeStamp, std
  * @param initDataArray Структура с данными для создания сообщения
  * @param chat Указатель на чат, куда добавляется сообщение
  */
-
-void changeLastReadIndexForSender(const std::shared_ptr<User> &user, const std::shared_ptr<Chat> &chat) {
-
-  chat->updateLastReadMessageIndex(user, chat->getMessages().size());
-}
-
-void addMessageToChat(const InitDataArray &initDataArray, std::shared_ptr<Chat> &chat) {
-
-  std::vector<std::shared_ptr<IMessageContent>> iMessageContent;
-  TextContent textContent(initDataArray._messageText);
-  MessageContent<TextContent> messageContentText(textContent);
-  iMessageContent.push_back(std::make_shared<MessageContent<TextContent>>(messageContentText));
-
-  if (!initDataArray._sender) {
-    std::cerr << "[Ошибка] Отправитель отсутствует. Сообщение не будет создано.\n" << std::endl;
-  } else {
-    Message message(iMessageContent, initDataArray._sender, initDataArray._timeStamp);
-
-    chat->addMessage(std::make_shared<Message>(message));
-
-    changeLastReadIndexForSender(initDataArray._sender, chat);
-  };
-}
 
 /**
  * @brief Инициализация тестовой системы: создание пользователей, чатов и истории сообщений.
@@ -115,28 +93,34 @@ void systemInitTest(ChatSystem &_chatsystem) {
 
   // Создание первого чата: Sasha и Elena (один на один)
   std::vector<std::shared_ptr<User>> recipients;
-  std::vector<std::weak_ptr<User>> participients;
+  std::vector<std::weak_ptr<User>> participants;
 
   recipients.push_back(Alex2104_ptr);
-  participients.push_back(Elena1510_ptr);
-  participients.push_back(Alex2104_ptr);
+  participants.push_back(Elena1510_ptr);
+  participants.push_back(Alex2104_ptr);
 
   auto chat_ptr = std::make_shared<Chat>();
-  chat_ptr->addParticipient(Elena1510_ptr);
-  chat_ptr->addParticipient(Alex2104_ptr);
+  chat_ptr->addParticipant(Elena1510_ptr);
+  chat_ptr->addParticipant(Alex2104_ptr);
 
-  for (const auto &chatUser : participients) {
-    if (auto chatUser_ptr = chatUser.lock()) {
+  for (const auto &chatUser : participants) {
+    try {
+      if (auto chatUser_ptr = chatUser.lock()) {
 
-      auto chatList = chatUser_ptr->getUserChatList();
-      if (chatList) {
-        chatList->addChat(chat_ptr);
-      } else {
-        // доделать - заменить исключение
-        std::cout << "[Ошибка] У пользователя нет списка чатов!\n" << std::endl;
-      }
+        // добавление чата в чат-лист
+        auto chatList = chatUser_ptr->getUserChatList();
+        if (chatList) {
+          chatList->addChat(chat_ptr);
+        } else
+          throw UnknownException("У пользователя нет списка чатов! init_system.");
+      } else
+        throw UnknownException("weak_ptr пустой. init_system.");
+    } catch (const ValidationException &ex) {
+      std::cout << " ! " << ex.what() << std::endl;
+      return;
     }
   }
+
   _chatsystem.addChat(chat_ptr);
 
   InitDataArray Elena_Alex1("Привет", "01-04-2025,12:00:00", Elena1510_ptr, recipients);
@@ -161,26 +145,26 @@ void systemInitTest(ChatSystem &_chatsystem) {
   // Создание второго чата: Elena, Sasha и Сергей (групповой чат)
   chat_ptr.reset();
   recipients.clear();
-  participients.clear();
+  participants.clear();
 
   recipients.push_back(Alex2104_ptr);
   recipients.push_back(Serg0101_ptr);
   recipients.push_back(q_ptr);
   recipients.push_back(f_ptr);
-  participients.push_back(Elena1510_ptr);
-  participients.push_back(Alex2104_ptr);
-  participients.push_back(Serg0101_ptr);
-  participients.push_back(q_ptr);
-  participients.push_back(f_ptr);
+  participants.push_back(Elena1510_ptr);
+  participants.push_back(Alex2104_ptr);
+  participants.push_back(Serg0101_ptr);
+  participants.push_back(q_ptr);
+  participants.push_back(f_ptr);
 
   chat_ptr = std::make_shared<Chat>();
-  chat_ptr->addParticipient(Elena1510_ptr);
-  chat_ptr->addParticipient(Alex2104_ptr);
-  chat_ptr->addParticipient(Serg0101_ptr);
-  chat_ptr->addParticipient(q_ptr);
-  chat_ptr->addParticipient(f_ptr);
+  chat_ptr->addParticipant(Elena1510_ptr);
+  chat_ptr->addParticipant(Alex2104_ptr);
+  chat_ptr->addParticipant(Serg0101_ptr);
+  chat_ptr->addParticipant(q_ptr);
+  chat_ptr->addParticipant(f_ptr);
 
-  for (const auto &chatUser : participients) {
+  for (const auto &chatUser : participants) {
     if (auto chatUser_ptr = chatUser.lock()) {
       auto chatList = chatUser_ptr->getUserChatList();
       if (chatList) {
