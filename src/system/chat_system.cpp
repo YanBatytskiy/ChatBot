@@ -30,7 +30,7 @@ std::size_t ChatSystem::showUserList(const bool showActiveUser) { // вывод 
   size_t returnIndex;
   for (const auto &user : _users) {
     if (user == _activeUser) {
-      returnIndex = index;
+      returnIndex = index-1;
     }
     if (!showActiveUser && user != _activeUser) {
       std::cout << index << ". " << user->getUserName() << ", логин - " << user->getLogin() << ";" << std::endl;

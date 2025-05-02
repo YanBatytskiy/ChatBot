@@ -5,7 +5,7 @@
  * @date 2025
  */
 
-#include "menu/code_registration.h"
+#include "menu/1_registration.h"
 #include "exception/login_exception.h"
 #include "exception/validation_exception.h"
 #include "system/chat_system.h"
@@ -128,14 +128,18 @@ bool checkPasswordValidForUser(const UserData &userData, const ChatSystem &chatS
  * @brief Ввод и проверка логина пользователя.
  */
 void inputNewLogin(UserData &userData, const ChatSystem &chatSystem) {
-  std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
   while (true) {
-    std::string newLogin = inputDataValidation("Введите новый Логин либо 0 для выхода в предыдущее меню. Логин не "
-                                               "менее 5 "
-                                               "символов и не более 20 символов (можно использовать только латинские "
-                                               "буквы и цифры) - ",
-                                               1, 20, false, userData, true, chatSystem);
+
     // ДОДЕЛАТЬ - ВЕРНУТЬ ОГРАНИЧЕНИЯ 5-20
+    std::size_t dataLengthMin = 0;
+    std::size_t dataLengthMax = 15;
+    std::string prompt;
+
+    prompt = "Введите новый Логин либо 0 для выхода в предыдущее меню. Логин не менее " +
+             std::to_string(dataLengthMin) + "символов и не более " + std::to_string(dataLengthMax) +
+             " символов (можно использовать только латинские буквы и цифры) - ";
+
+    std::string newLogin = inputDataValidation(prompt, dataLengthMin, dataLengthMax, false, userData, true, chatSystem);
     if (newLogin == "0")
       return;
     if (checkLoginExists(newLogin, chatSystem)) {
@@ -152,12 +156,18 @@ void inputNewLogin(UserData &userData, const ChatSystem &chatSystem) {
  * @brief Ввод и проверка пароля пользователя.
  */
 void inputNewPassword(UserData &userData, const ChatSystem &chatSystem) {
-  std::string newPassword = inputDataValidation("Введите новый Пароль либо 0 для выхода в предыдущее меню. Пароль не "
-                                                "менее 5 символов и не более 10, "
-                                                "обязательно использовать минимум одну заглавную букву и одну цифру "
-                                                "(можно использовать только латинские буквы и цифры) - ",
-                                                1, 10, true, userData, true, chatSystem);
+
   // ДОДЕЛАТЬ - ВЕРНУТЬ ОГРАНИЧЕНИЯ 5-10
+  std::size_t dataLengthMin = 0;
+  std::size_t dataLengthMax = 10;
+  std::string prompt;
+
+  prompt = "Введите новый Пароль либо 0 для выхода в предыдущее меню. Пароль не менее " +
+           std::to_string(dataLengthMin) + "символов и не более " + std::to_string(dataLengthMax) +
+           " символов обязательно использовать минимум одну заглавную букву и одну цифру (можно использовать только "
+           "латинские буквы и цифры) - ";
+
+  std::string newPassword = inputDataValidation(prompt, dataLengthMin, dataLengthMax, true, userData, true, chatSystem);
   if (newPassword != "0")
     userData._password = newPassword;
 }
@@ -166,10 +176,17 @@ void inputNewPassword(UserData &userData, const ChatSystem &chatSystem) {
  * @brief Ввод и проверка имени пользователя.
  */
 void inputNewName(UserData &userData, const ChatSystem &chatSystem) {
-  std::string newName = inputDataValidation("Введите желаемое Имя для отображения, не менее 3 символов и не более "
-                                            "10, (можно использовать только латинские буквы и цифры) - ",
-                                            1, 10, false, userData, true, chatSystem);
+
   // ДОДЕЛАТЬ - ВЕРНУТЬ ОГРАНИЧЕНИЯ 3-10
+  
+  std::size_t dataLengthMin = 1;
+  std::size_t dataLengthMax = 10;
+  std::string prompt;
+
+  prompt = "Введите желаемое Имя для отображения, не менее " + std::to_string(dataLengthMin) + "символов и не более " +
+           std::to_string(dataLengthMax) + " символов, (можно использовать только латинские буквы и цифры) - ";
+
+  std::string newName = inputDataValidation(prompt, dataLengthMin, dataLengthMax, false, userData, true, chatSystem);
   if (newName != "0")
     userData._name = newName;
 }
@@ -178,7 +195,7 @@ void inputNewName(UserData &userData, const ChatSystem &chatSystem) {
  * @brief Регистрация нового пользователя.
  */
 void userRegistration(ChatSystem &chatSystem) {
-  std::cout << "Регистрация нового пользователя.\n";
+  std::cout << "Регистрация нового пользователя." << std::endl;
   UserData userData;
 
   inputNewLogin(userData, chatSystem);
@@ -209,7 +226,6 @@ void userRegistration(ChatSystem &chatSystem) {
  */
 bool userLoginInsystem(ChatSystem &chatSystem) {
   UserData userData;
-  std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 
   // логин
   while (true) {

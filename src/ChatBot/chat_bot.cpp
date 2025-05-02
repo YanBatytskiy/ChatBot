@@ -1,6 +1,6 @@
-#include "menu/code_init_system.h"
-#include "menu/code_main_menu.h"
-#include "menu/code_registration.h"
+#include "menu/0_init_system.h"
+#include "menu/2_0_login_menu.h"
+#include "menu/1_registration.h"
 #include "system/chat_system.h"
 #include <iostream>
 
@@ -37,7 +37,7 @@ int main() {
       break;
     case 2: { // вход пользователя в систему
       if (userLoginInsystem(chatSystem))
-        mainMenuChoice(chatSystem);
+        loginMenuChoice(chatSystem);
       break; // case 2 AuthMenu
     }
     default:
