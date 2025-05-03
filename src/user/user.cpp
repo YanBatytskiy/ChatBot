@@ -104,13 +104,6 @@ void User::showUserData() const {
   std::cout << "Name: " << _userName << ", Login: " << _login << ", Password: " << _password << std::endl;
 }
 
-/**
- * @brief Печать списка чатов пользователя.
- *
- *
- *
- * @param user Ссылка на пользователя, для которого нужно напечатать список чатов
- */
 void User::printChatList(const std::shared_ptr<User> &user) const {
   // ДОДЕЛАТЬ ВЫВОД УДАЛЕННОГО ПОЛЬЗОВАТЕЛЯ В СПИСКЕ а также количество новых сообщений в списке
 
@@ -149,11 +142,12 @@ void User::printChatList(const std::shared_ptr<User> &user) const {
         std::cout << " ! " << ex.what() << std::endl;
       }
       // перебираем участников чата
+      std::cout << "Имя/Логин: ";
       for (const auto &participant : chat_ptr->getParticipants()) {
         auto user_ptr = participant._user.lock();
         if (user_ptr) {
           if (user_ptr != user) {
-            std::cout << user_ptr->getUserName() << "; ";
+            std::cout << user_ptr->getUserName() << "/" << user_ptr->getLogin() << "; ";
           } else {
             activeUserMessageCount = participant._lastReadMessageIndex;
           };
@@ -167,7 +161,7 @@ void User::printChatList(const std::shared_ptr<User> &user) const {
     ++index;
 
     // выводим на печать дату и время последнего сообщения
-    std::cout << "Последнее сообщение от - " << date_stamp << ". ";
+    std::cout << "Последнее сообщение - " << date_stamp << ". ";
 
     // вывод на печать количества новых сообщений
     if (totalMessages > activeUserMessageCount)

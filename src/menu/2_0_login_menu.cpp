@@ -11,6 +11,7 @@
 #include "menu/2_0_login_menu.h"
 #include "menu/2_1_new_chat_menu.h"
 #include "menu/2_2_chat_list_menu.h"
+#include "menu/2_4_user_profile.h"
 
 #include <cctype>
 #include <iostream>
@@ -83,7 +84,7 @@ void loginMenuChoice(ChatSystem &chatSystem) { // вывод главного м
     std::cout << "Выберите пункт меню: " << std::endl;
     std::cout << "1 - Создать новый чат" << std::endl;
     std::cout << "2 - Показать список чатов" << std::endl;
-    std::cout << "3 - Показать список папок" << std::endl;
+    std::cout << "3 - Показать список папок - Under constraction." << std::endl;
     std::cout << "4 - Показать Профиль пользователя" << std::endl;
     std::cout << "0 - Выйти в предыдущее меню" << std::endl;
 
@@ -118,7 +119,9 @@ void loginMenuChoice(ChatSystem &chatSystem) { // вывод главного м
           std::cout << "Показать список папок - Under constraction." << std::endl;
           break; // case 3 MainMenu
         case 4:
-          std::cout << "Показать Профиль пользователя -Under constraction." << std::endl;
+          loginMenu_4UserProfile(chatSystem);
+          exit2 = false;
+          continue;
           break; // case 4 MainMenu
         default:
           break; // default MainMenu

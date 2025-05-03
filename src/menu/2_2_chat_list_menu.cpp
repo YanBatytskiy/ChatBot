@@ -23,7 +23,23 @@ void loginMenu_2EditChat(ChatSystem &chatSystem, const std::shared_ptr<Chat> &ch
     std::cout << "\033[32m"; // red
     std::cout << "Из них непрочитанных - " << messageCount - unReadCount << std::endl;
     std::cout << "\033[0m";
+	
+    // выводим список участников чата кроме активного юзера
+    std::cout << std::endl << "Участники чата Имя/Логин: "<< std::endl;
+    // перебираем участников чата
+    for (const auto &participant : chat->getParticipants()) {
+      auto user_ptr = participant._user.lock();
+      if (user_ptr) {
+        if (user_ptr != chatSystem.getActiveUser()) {
+          std::cout << user_ptr->getUserName()<< "/" << user_ptr->getUserName() << "; ";
+        };
+      } else {
+        std::cout << "удал. пользоыватель";
+      }
+    }
 
+    std::cout << std::endl;
+    
     chat->printChat(chatSystem.getActiveUser());
     chat->updateLastReadMessageIndex(chatSystem.getActiveUser(), messageCount);
     std::cout << std::endl;

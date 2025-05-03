@@ -38,7 +38,7 @@ void Message::printMessage(const std::shared_ptr<User> &currentUser) {
     } else {
       std::cout << "user уничтожен " << sender_ptr->getLogin() << std::endl;
     }
-    std::cout << "     -> Входящее от " << sender_ptr->getLogin() << "    " << _time_stamp << std::endl;
+    std::cout << "     -> Входящее от Логин/Имя" << sender_ptr->getLogin() << "/" << sender_ptr->getUserName() << "    " << _time_stamp << std::endl;
 
     for (const auto &content : _content) {
       if (auto textContent = std::dynamic_pointer_cast<MessageContent<TextContent>>(content)) {

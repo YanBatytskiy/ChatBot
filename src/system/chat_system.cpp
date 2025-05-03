@@ -3,7 +3,7 @@
 #include <iostream>
 
 // constructors
-ChatSystem::ChatSystem() {};
+ChatSystem::ChatSystem(){};
 
 // getters
 const std::vector<std::shared_ptr<User>> &ChatSystem::getUsers() const { return _users; }
@@ -34,7 +34,7 @@ std::size_t ChatSystem::showUserList(const bool showActiveUser) { // вывод 
       returnIndex = index - 1;
     }
     if (!showActiveUser && user != _activeUser) {
-      std::cout << index << ". " << user->getUserName() << ", логин - " << user->getLogin() << ";" << std::endl;
+      std::cout << index << ".  Имя - " << user->getUserName() << ", логин - " << user->getLogin() << ";" << std::endl;
       ++index;
     }
   }

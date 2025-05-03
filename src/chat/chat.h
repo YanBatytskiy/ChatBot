@@ -44,9 +44,4 @@ public:
   void removeParticipant(const std::shared_ptr<User> &user);
 
   void updateLastReadMessageIndex(const std::shared_ptr<User> &user, std::size_t newLastReadMessageIndex);
-
-  /**
-   * @brief Отметить все сообщения во всех чатах как прочитанные.
-   */
-  void makeAllRead();
 };

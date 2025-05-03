@@ -77,6 +77,3 @@ void Chat::updateLastReadMessageIndex(const std::shared_ptr<User> &user, std::si
     std::cout << " ! " << ex.what() << std::endl;
   }
 }
-
-void Chat::makeAllRead() {};
-// ДОДЕЛАТЬ
