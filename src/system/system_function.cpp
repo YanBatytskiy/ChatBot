@@ -4,7 +4,10 @@
 #include "system/chat_system.h"
 
 #include "menu/0_init_system.h"
+#include "system/date_time_utils.h"
 
+#include <algorithm>
+#include <ctime>
 #include <iostream>
 #include <limits>
 #include <stdexcept>
@@ -44,31 +47,30 @@ std::size_t parseGetlineToSizeT(const std::string &str) { // конвертац�
 
 void changeLastReadIndexForSender(const std::shared_ptr<User> &user, const std::shared_ptr<Chat> &chat) {
 
-	chat->updateLastReadMessageIndex(user, chat->getMessages().size());
+  chat->updateLastReadMessageIndex(user, chat->getMessages().size());
+}
+
+void addMessageToChat(const InitDataArray &initDataArray, std::shared_ptr<Chat> &chat) {
+
+  std::vector<std::shared_ptr<IMessageContent>> iMessageContent;
+  TextContent textContent(initDataArray._messageText);
+  MessageContent<TextContent> messageContentText(textContent);
+  iMessageContent.push_back(std::make_shared<MessageContent<TextContent>>(messageContentText));
+
+  try {
+    if (!initDataArray._sender) {
+      throw UnknownException(" Отправитель отсутствует. Сообщение не будет создано. addMessageToChat");
+    } else {
+      Message message(iMessageContent, initDataArray._sender, initDataArray._timeStamp);
+
+      chat->addMessage(std::make_shared<Message>(message));
+
+      changeLastReadIndexForSender(initDataArray._sender, chat);
+    };
+  } catch (const ValidationException &ex) {
+    std::cout << " ! " << ex.what() << std::endl;
   }
-  
-  void addMessageToChat(const InitDataArray &initDataArray, std::shared_ptr<Chat> &chat) {
-  
-	  std::vector<std::shared_ptr<IMessageContent>> iMessageContent;
-	  TextContent textContent(initDataArray._messageText);
-	  MessageContent<TextContent> messageContentText(textContent);
-	  iMessageContent.push_back(std::make_shared<MessageContent<TextContent>>(messageContentText));
-	
-	  try {
-		if (!initDataArray._sender) {
-		  throw UnknownException(" Отправитель отсутствует. Сообщение не будет создано. addMessageToChat");
-		} else {
-		  Message message(iMessageContent, initDataArray._sender, initDataArray._timeStamp);
-	
-		  chat->addMessage(std::make_shared<Message>(message));
-	
-		  changeLastReadIndexForSender(initDataArray._sender, chat);
-		};
-	  } catch (const ValidationException &ex) {
-		std::cout << " ! " << ex.what() << std::endl;
-	  }
-  }
-  
+}
 
 bool inputNewMessage(ChatSystem &chatSystem, std::shared_ptr<Chat> chat) {
   std::cout << std::endl << "Наберите новое сообщение либо 0 для выхода:" << std::endl;
@@ -92,7 +94,8 @@ bool inputNewMessage(ChatSystem &chatSystem, std::shared_ptr<Chat> chat) {
             recipients.push_back(user_ptr);
         }
       }
-      InitDataArray newMessageStruct(inputData, "15-04-2025, 15:00:00", chatSystem.getActiveUser(), recipients);
+
+      InitDataArray newMessageStruct(inputData, getCurrentDateTime(), chatSystem.getActiveUser(), recipients);
       addMessageToChat(newMessageStruct, chat);
       return true;
     } // try
@@ -101,4 +104,12 @@ bool inputNewMessage(ChatSystem &chatSystem, std::shared_ptr<Chat> chat) {
       continue;
     }
   } // while
-};
+}
+
+std::string TextToLower(const std::string &str) {
+  std::string result = str;
+
+  // приводим всех к нижнему регистру
+  std::transform(result.begin(), result.end(), result.begin(), [](unsigned char c) { return std::tolower(c); });
+  return result;
+}

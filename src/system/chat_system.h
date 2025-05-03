@@ -36,5 +36,5 @@ public:
 
   // additional methods
   std::size_t showUserList(const bool showActiveUser); // вывод на экрын списка пользователей
-  void findUser(const std::string userName);           // поиск пользователя
+  void findUser(std::vector<std::shared_ptr<User>>& users, const std::string& textToFind);           // поиск пользователя
 };

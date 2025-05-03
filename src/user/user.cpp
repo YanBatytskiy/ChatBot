@@ -6,6 +6,7 @@
  */
 
 #include "user/user.h"
+#include "exception/validation_exception.h"
 #include "user/user_chat_list.h"
 
 #include <cstddef>
@@ -113,6 +114,8 @@ void User::showUserData() const {
 void User::printChatList(const std::shared_ptr<User> &user) const {
   // ДОДЕЛАТЬ ВЫВОД УДАЛЕННОГО ПОЛЬЗОВАТЕЛЯ В СПИСКЕ а также количество новых сообщений в списке
 
+  std::string date_stamp;
+
   // достаем чатлист
   const auto &chatList = user->getUserChatList()->getChatFromList();
 
@@ -131,10 +134,20 @@ void User::printChatList(const std::shared_ptr<User> &user) const {
   // перебираем чаты в списке
   for (const auto &weakChat : chatList) {
     if (auto chat_ptr = weakChat.lock()) {
+
       std::cout << std::endl;
       std::cout << index << ". ";
-      totalMessages = chat_ptr->getMessages().size();
 
+      const auto &messages = chat_ptr->getMessages();
+      try {
+        if (!messages.empty()) {
+          totalMessages = messages.size();
+          date_stamp = messages.back()->getTimeStamp();
+        } else
+          throw UnknownException("Вектор сообщений пуст. User::printChatList");
+      } catch (const ValidationException &ex) {
+        std::cout << " ! " << ex.what() << std::endl;
+      }
       // перебираем участников чата
       for (const auto &participant : chat_ptr->getParticipants()) {
         auto user_ptr = participant._user.lock();
@@ -152,6 +165,9 @@ void User::printChatList(const std::shared_ptr<User> &user) const {
       //   std::cout << "Чат удален." << std::endl;
     }
     ++index;
+
+    // выводим на печать дату и время последнего сообщения
+    std::cout << "Последнее сообщение от - " << date_stamp << ". ";
 
     // вывод на печать количества новых сообщений
     if (totalMessages > activeUserMessageCount)

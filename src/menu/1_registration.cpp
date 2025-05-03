@@ -178,7 +178,7 @@ void inputNewPassword(UserData &userData, const ChatSystem &chatSystem) {
 void inputNewName(UserData &userData, const ChatSystem &chatSystem) {
 
   // ДОДЕЛАТЬ - ВЕРНУТЬ ОГРАНИЧЕНИЯ 3-10
-  
+
   std::size_t dataLengthMin = 1;
   std::size_t dataLengthMax = 10;
   std::string prompt;
@@ -236,7 +236,7 @@ bool userLoginInsystem(ChatSystem &chatSystem) {
         return false;
 
       if (!checkLoginExists(userData._login, chatSystem))
-        throw UserNotFoundException(userData._login);
+        throw UserNotFoundException();
     } catch (const ValidationException &ex) {
       std::cout << " ! " << ex.what() << " Попробуйте еще раз." << std::endl;
       continue;

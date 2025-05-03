@@ -1,4 +1,5 @@
 #include "system/chat_system.h"
+#include "system/system_function.h"
 #include <iostream>
 
 // constructors
@@ -20,8 +21,8 @@ void ChatSystem::addUser(const std::shared_ptr<User> &user) { _users.push_back(u
 void ChatSystem::addChat(const std::shared_ptr<Chat> &chat) { _chats.push_back(chat); }
 
 // removers
-void ChatSystem::eraseUser(const std::shared_ptr<User> &user) {};
-void ChatSystem::eraseChat(const std::shared_ptr<Chat> &chat) {};
+void ChatSystem::eraseUser(const std::shared_ptr<User> &user) {}
+void ChatSystem::eraseChat(const std::shared_ptr<Chat> &chat) {}
 
 // additional methods
 std::size_t ChatSystem::showUserList(const bool showActiveUser) { // вывод на экрын списка пользователей
@@ -30,7 +31,7 @@ std::size_t ChatSystem::showUserList(const bool showActiveUser) { // вывод 
   size_t returnIndex;
   for (const auto &user : _users) {
     if (user == _activeUser) {
-      returnIndex = index-1;
+      returnIndex = index - 1;
     }
     if (!showActiveUser && user != _activeUser) {
       std::cout << index << ". " << user->getUserName() << ", логин - " << user->getLogin() << ";" << std::endl;
@@ -38,8 +39,21 @@ std::size_t ChatSystem::showUserList(const bool showActiveUser) { // вывод 
     }
   }
   return returnIndex;
-};
+}
 
-void ChatSystem::findUser(const std::string userName) { // поиск пользователя
-  std::cout << "Find User under constraction." << std::endl;
+void ChatSystem::findUser(std::vector<std::shared_ptr<User>> &users,
+                          const std::string &textToFind) { // поиск пользователя
+
+  std::string textToFindLower = TextToLower(textToFind);
+
+  // перебираем всех пользователей в векторе
+  for (const auto &user : _users) {
+
+    std::string LowerLogin = TextToLower(user->getLogin());
+    std::string LowerName = TextToLower(user->getUserName());
+
+    if (user != _activeUser)
+      if (LowerLogin.find(textToFindLower) != std::string::npos || LowerName.find(textToFindLower) != std::string::npos)
+        users.push_back(user);
+  }
 }

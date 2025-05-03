@@ -1,6 +1,6 @@
 #include "menu/0_init_system.h"
-#include "menu/2_0_login_menu.h"
 #include "menu/1_registration.h"
+#include "menu/2_0_login_menu.h"
 #include "system/chat_system.h"
 #include <iostream>
 

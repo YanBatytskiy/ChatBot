@@ -8,8 +8,7 @@ public:
 
 class UserNotFoundException : public LoginException {
 public:
-  UserNotFoundException(const std::string &login)
-      : LoginException("!!!Пользователь с логином " + login + " не найден.") {};
+  UserNotFoundException() : LoginException("!!!Такой пользователь не найден. ") {};
 };
 
 class IncorrectPasswordException : public LoginException {
