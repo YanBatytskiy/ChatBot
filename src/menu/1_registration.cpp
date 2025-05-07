@@ -137,7 +137,7 @@ void inputNewLogin(UserData &userData, const ChatSystem &chatSystem) {
     std::string prompt;
 
     prompt = "Введите новый Логин либо 0 для выхода в предыдущее меню. Логин не менее " +
-             std::to_string(dataLengthMin) + "символов и не более " + std::to_string(dataLengthMax) +
+             std::to_string(dataLengthMin) + " символов и не более " + std::to_string(dataLengthMax) +
              " символов (можно использовать только латинские буквы и цифры) - ";
 
     std::string newLogin = inputDataValidation(prompt, dataLengthMin, dataLengthMax, false, userData, true, chatSystem);
@@ -164,7 +164,7 @@ void inputNewPassword(UserData &userData, const ChatSystem &chatSystem) {
   std::string prompt;
 
   prompt = "Введите новый Пароль либо 0 для выхода в предыдущее меню. Пароль не менее " +
-           std::to_string(dataLengthMin) + "символов и не более " + std::to_string(dataLengthMax) +
+           std::to_string(dataLengthMin) + " символов и не более " + std::to_string(dataLengthMax) +
            " символов обязательно использовать минимум одну заглавную букву и одну цифру (можно использовать только "
            "латинские буквы и цифры) - ";
 

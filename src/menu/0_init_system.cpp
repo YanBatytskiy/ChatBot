@@ -1,8 +1,8 @@
 #include "menu/0_init_system.h"
 #include "chat/chat.h"
 #include "exception/validation_exception.h"
-#include "system/system_function.h"
 #include "message/message_content_struct.h"
+#include "system/system_function.h"
 #include "user/user.h"
 #include "user/user_chat_list.h"
 #include <iostream>
@@ -24,7 +24,8 @@ InitDataArray::InitDataArray(std::string messageText, std::string timeStamp, std
 /**
  * @brief Initializes the chat system with test data.
  * @param _chatsystem Reference to the ChatSystem object to be initialized.
- * @details Creates users, adds them to the system, creates chat lists, and sets up two chats (one private, one group) with sample messages.
+ * @details Creates users, adds them to the system, creates chat lists, and sets up two chats (one private, one group)
+ * with sample messages.
  */
 void systemInitTest(ChatSystem &_chatsystem) {
   // Создание пользователей
@@ -180,7 +181,7 @@ void systemInitTest(ChatSystem &_chatsystem) {
   recipients.push_back(mar1980_ptr);
   recipients.push_back(yak1980_ptr);
 
-  InitDataArray Elena_Alex_Serg3("Т Organizать всем здрассьте.", "01-04-2025,13:10:15", Serg0101_ptr, recipients);
+  InitDataArray Elena_Alex_Serg3("Всем здрассьте.", "01-04-2025,13:10:15", Serg0101_ptr, recipients);
   addMessageToChat(Elena_Alex_Serg3, chat_ptr);
 
   recipients.clear();
@@ -207,4 +208,3 @@ void systemInitTest(ChatSystem &_chatsystem) {
   //    changeLastReadIndexForSender(Elena1510_ptr, chat_ptr);
   //   chat_ptr->printChat(Elena1510_ptr);
 }
-

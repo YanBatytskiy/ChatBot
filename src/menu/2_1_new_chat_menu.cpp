@@ -164,7 +164,8 @@ void LoginMenu_1NewChatMakeParticipants(ChatSystem &chatSystem, std::shared_ptr<
 
         // добавляем в конец запятую
         inputData.push_back(',');
-        std::cout << std::endl << inputData << std::endl;
+        // проверки
+        // std::cout << std::endl << inputData << std::endl;
 
         // создаем вектор для хранения индексов получателей в массиве пользователей
         std::vector<std::size_t> recipientIndex;
@@ -172,44 +173,46 @@ void LoginMenu_1NewChatMakeParticipants(ChatSystem &chatSystem, std::shared_ptr<
         // заполняем вектор значениями
         std::string str_temp;
         std::size_t index_temp;
+        std::size_t userCount = chatSystem.getUsers().size();
 
         do {
           auto pos = inputData.find_first_of(',');
 
           str_temp = inputData.substr(0, pos);
-          //   std::cout << str_temp << " : ";
+          inputData.erase(0, pos + 1);
+          // std::cout << str_temp << " : ";
 
           if (!str_temp.empty()) {
             index_temp = parseGetlineToSizeT(str_temp);
             // std::cout << index_temp << std::endl;
 
+            if (index_temp == 0 || index_temp > userCount - 1)
+              throw IndexOutOfRangeException(str_temp);
+
+            // Преобразуем ввод в индекс относительно getUsers
+            std::size_t realIndex = (index_temp <= activeUserIndex) ? index_temp - 1 : index_temp;
+
+            if (realIndex >= userCount)
+              throw IndexOutOfRangeException("Индекс выходит за пределы getUsers()");
+
             // проверяем на дубли
-            if (index_temp <= activeUserIndex) {
-              if (std::find(recipientIndex.begin(), recipientIndex.end(), index_temp - 1) == recipientIndex.end()) {
-                recipientIndex.push_back(index_temp - 1);
-                // std::cout << " : " << index_temp - 1 << std::endl;
-              }
-            } else {
-              if (std::find(recipientIndex.begin(), recipientIndex.end(), index_temp) == recipientIndex.end()) {
-                recipientIndex.push_back(index_temp);
-                std::cout << " : " << recipientIndex.back() << std::endl;
-              };
-            };
+            if (std::find(recipientIndex.begin(), recipientIndex.end(), realIndex) == recipientIndex.end()) {
+              recipientIndex.push_back(realIndex);
+            }
           };
 
-          inputData.erase(0, pos + 1);
         } while (!inputData.empty());
 
         // проверки временная
-        // std::cout << std::endl;
-        // for (const auto &rep : recipientIndex)
-        //   std::cout << rep << ", ";
+        std::cout << std::endl;
+        for (const auto &rep : recipientIndex)
+          std::cout << rep << ", ";
 
         // проверки временная
-        // std::cout << std::endl;
-        // for (std::size_t i = 1; i <= recipientIndex.size(); ++i) {
-        //   std::cout << chatSystem.getUsers()[recipientIndex[i - 1]]->getLogin() << ", ";
-        // }
+        std::cout << std::endl;
+        for (std::size_t i = 1; i <= recipientIndex.size(); ++i) {
+          std::cout << chatSystem.getUsers()[recipientIndex[i - 1]]->getLogin() << ", ";
+        }
 
         // заполняем вектор участников
         for (const auto &recipient : recipientIndex) {
@@ -217,11 +220,12 @@ void LoginMenu_1NewChatMakeParticipants(ChatSystem &chatSystem, std::shared_ptr<
         }
 
         // проверки
-        // std::cout << "Участники чата: " << std::endl;
-        // for (const auto &user : chat->getParticipants()) {
-        //   auto user_ptr = user._user.lock();
-        //   std::cout << user_ptr->getLogin() << " ака " << user_ptr->getUserName() << std::endl;
-        // }
+
+        std::cout << "Участники чата: " << std::endl;
+        for (const auto &user : chat->getParticipants()) {
+          auto user_ptr = user._user.lock();
+          std::cout << user_ptr->getLogin() << " ака " << user_ptr->getUserName() << std::endl;
+        }
       } // try
       catch (const ValidationException &ex) {
         std::cout << " ! " << ex.what() << " Попробуйте еще раз." << std::endl;
@@ -238,7 +242,7 @@ void LoginMenu_1NewChatMakeParticipants(ChatSystem &chatSystem, std::shared_ptr<
         chat->addParticipant(user);
       }
 
-    return;  // case All
+    return; // case All
   }
 
   } // switch
