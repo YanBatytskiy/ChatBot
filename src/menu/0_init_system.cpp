@@ -36,7 +36,7 @@ void systemInitTest(ChatSystem &_chatsystem) {
   auto mar1980_ptr = std::make_shared<User>("mar1980", "Mariya", "User0");
   auto fed1980_ptr = std::make_shared<User>("fed1980", "Fedor", "User0");
   auto vera1980_ptr = std::make_shared<User>("vera1980", "Vera", "User0");
-  auto yak1980_ptr = std::make_shared<User>("yak1980_ptr", "Yakov", "User0");
+  auto yak1980_ptr = std::make_shared<User>("yak1980", "Yakov", "User0");
 
   Alex2104_ptr->showUserData();
   Elena1510_ptr->showUserData();
