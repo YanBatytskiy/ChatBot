@@ -40,6 +40,10 @@ Doxyfile
 *.png
 *.html
 
+# Но НЕ игнорировать эти
+!Classes.png
+!Exceptions.png
+
 # 🛡️ Утилиты
 .clang-format
 .clangd
