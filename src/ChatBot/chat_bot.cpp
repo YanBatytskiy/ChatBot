@@ -4,46 +4,49 @@
 #include "system/chat_system.h"
 #include <iostream>
 
+/**
+ * @brief Main entry point for the chat system application.
+ * @return 0 on successful execution or exit.
+ * @details Initializes the chat system, handles user authentication (registration/login), and manages the main program
+ * loop.
+ */
 int main() {
-
-  // создаем ChatSystem
+  // Create ChatSystem instance
   ChatSystem chatSystem;
 
+  // Initialize the system with test data
   systemInitTest(chatSystem);
 
   short userChoice;
 
+  // Main program loop
   while (true) {
+    // Reset active user
     chatSystem.setActiveUser(nullptr);
+
+    // Set a default active user with login "E"
     // std::shared_ptr<User> activeUser_ptr = findUserbyLogin("E", chatSystem);
     // chatSystem.setActiveUser(activeUser_ptr);
 
+    // Display authentication menu and get user choice
     userChoice = authMenu();
 
-    /*
-     * @return short Выбор пользователя:
-     * - 1 — Регистрация пользователя,
-     * - 2 — Вход в чат,
-     * - 0 — Завершение программы.
-     */
-
-    // запуск регистрации или логина в систему либо выход
+    // Handle user choice for registration, login, or exit
     switch (userChoice) {
-    case 0: // выход
+    case 0: // Exit the program
       return 0;
-      break;
-    case 1: // регистрация нового пользователя
+    case 1: // Register a new user
       userRegistration(chatSystem);
       break;
-    case 2: { // вход пользователя в систему
+    case 2: // Log in an existing user
       if (userLoginInsystem(chatSystem))
         loginMenuChoice(chatSystem);
-      break; // case 2 AuthMenu
-    }
+      break;
     default:
-      break; // default AuthMenu
+      break; // Handle invalid choices
     }
   }
+
   std::cout << std::endl;
   return 0;
 }

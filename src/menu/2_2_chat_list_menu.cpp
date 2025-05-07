@@ -1,14 +1,19 @@
 #include "exception/validation_exception.h"
-#include "menu/2_0_login_menu.h"
 #include "system/chat_system.h"
 #include "system/system_function.h"
 #include "user/user_chat_list.h"
-
 #include <iostream>
 
+/**
+ * @brief Manages interactions with a specific chat.
+ * @param chatSystem Reference to the chat system.
+ * @param chat Shared pointer to the chat to be edited.
+ * @throws EmptyInputException If input is empty.
+ * @throws IndexOutOfRangeException If input is not 0, 1, 2, 3, 4, or 5.
+ * @details Displays chat details, participants, and messages, and provides options to send messages or perform other
+ * actions (some under construction).
+ */
 void loginMenu_2EditChat(ChatSystem &chatSystem, const std::shared_ptr<Chat> &chat /*, std::size_t unReadCountIndex*/) {
-
-  // ДОДЕЛАТЬ в том числе исключения
 
   std::string userChoice;
   size_t userChoiceNumber;
@@ -23,15 +28,15 @@ void loginMenu_2EditChat(ChatSystem &chatSystem, const std::shared_ptr<Chat> &ch
     std::cout << "\033[32m"; // red
     std::cout << "Из них непрочитанных - " << messageCount - unReadCount << std::endl;
     std::cout << "\033[0m";
-	
+
     // выводим список участников чата кроме активного юзера
-    std::cout << std::endl << "Участники чата Имя/Логин: "<< std::endl;
+    std::cout << std::endl << "Участники чата Имя/Логин: " << std::endl;
     // перебираем участников чата
     for (const auto &participant : chat->getParticipants()) {
       auto user_ptr = participant._user.lock();
       if (user_ptr) {
         if (user_ptr != chatSystem.getActiveUser()) {
-          std::cout << user_ptr->getUserName()<< "/" << user_ptr->getUserName() << "; ";
+          std::cout << user_ptr->getUserName() << "/" << user_ptr->getUserName() << "; ";
         };
       } else {
         std::cout << "удал. пользоыватель";
@@ -39,7 +44,7 @@ void loginMenu_2EditChat(ChatSystem &chatSystem, const std::shared_ptr<Chat> &ch
     }
 
     std::cout << std::endl;
-    
+
     chat->printChat(chatSystem.getActiveUser());
     chat->updateLastReadMessageIndex(chatSystem.getActiveUser(), messageCount);
     std::cout << std::endl;
@@ -105,6 +110,14 @@ void loginMenu_2EditChat(ChatSystem &chatSystem, const std::shared_ptr<Chat> &ch
   } // first while
 }
 
+/**
+ * @brief Displays the list of chats for the active user.
+ * @param chatSystem Reference to the chat system.
+ * @throws EmptyInputException If input is empty.
+ * @throws IndexOutOfRangeException If input is not a valid chat index or 0.
+ * @throws ChatNotFoundException If the selected chat cannot be accessed.
+ * @details Shows the user's chat list and allows selection of a chat to edit or view.
+ */
 void loginMenu_2ChatList(ChatSystem &chatSystem) { // показать список чатов
 
   auto chatCount = chatSystem.getActiveUser()

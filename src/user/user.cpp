@@ -1,109 +1,97 @@
-/**
- * @file user.cpp
- * @brief Реализация методов класса User для системы ChatBot.
- * @version 1.0
- * @date 2025
- */
-
 #include "user/user.h"
 #include "exception/validation_exception.h"
 #include "user/user_chat_list.h"
-
 #include <cstddef>
 #include <iostream>
 #include <memory>
 #include <ostream>
 
-// --- Конструкторы ---
-
 /**
- * @brief Конструктор класса User.
- *
- * @param login Логин пользователя
- * @param userName Имя пользователя для отображения
- * @param password Пароль пользователя
+ * @brief Constructor for User.
+ * @param login User's login.
+ * @param userName User's display name.
+ * @param password User's password.
  */
 User::User(const std::string &login, const std::string &userName, const std::string &password)
     : _login(login), _userName(userName), _password(password) {}
 
 /**
- * @brief Создание списка чатов для пользователя.
- *
- * @param userChats Указатель на объект списка чатов
+ * @brief Assigns a chat list to the user.
+ * @param userChats Shared pointer to the user's chat list.
  */
 void User::createChatList(const std::shared_ptr<UserChatList> &userChats) { _userChats = userChats; }
 
-// --- Геттеры ---
-
 /**
- * @brief Получение логина пользователя.
- * @return Логин пользователя
+ * @brief Gets the user's login.
+ * @return The user's login string.
  */
 std::string User::getLogin() const { return _login; }
 
 /**
- * @brief Получение имени пользователя.
- * @return Имя пользователя
+ * @brief Gets the user's display name.
+ * @return The user's display name string.
  */
 std::string User::getUserName() const { return _userName; }
 
 /**
- * @brief Получение пароля пользователя.
- * @return Пароль пользователя
+ * @brief Gets the user's password.
+ * @return The user's password string.
  */
 std::string User::getPassword() const { return _password; }
 
 /**
- * @brief Получение списка чатов пользователя.
- * @return Указатель на объект списка чатов
+ * @brief Gets the user's chat list.
+ * @return Shared pointer to the user's chat list.
  */
 std::shared_ptr<UserChatList> User::getUserChatList() const { return _userChats; }
 
-// --- Сеттеры ---
-
 /**
- * @brief Установка нового логина пользователя.
- * @param login Новый логин
+ * @brief Sets the user's login.
+ * @param login The new login string.
  */
 void User::setLogin(const std::string &login) { _login = login; }
 
 /**
- * @brief Установка нового имени пользователя.
- * @param userName Новое имя
+ * @brief Sets the user's display name.
+ * @param userName The new display name string.
  */
 void User::setUserName(const std::string &userName) { _userName = userName; }
 
 /**
- * @brief Установка нового пароля пользователя.
- * @param password Новый пароль
+ * @brief Sets the user's password.
+ * @param password The new password string.
  */
 void User::setPassword(const std::string &password) { _password = password; }
 
-// --- Дополнительные методы ---
-
 /**
- * @brief Проверка корректности пароля.
- *
- * @param password Пароль для проверки
- * @return true, если пароль совпадает
+ * @brief Checks if the provided password matches the user's password.
+ * @param password The password to check.
+ * @return True if the password matches, false otherwise.
  */
 bool User::checkPassword(const std::string &password) const { return (password == _password); }
 
 /**
- * @brief Проверка корректности логина.
- *
- * @param login Логин для проверки
- * @return true, если логин совпадает
+ * @brief Checks if the provided login matches the user's login.
+ * @param login The login to check.
+ * @return True if the login matches, false otherwise.
  */
 bool User::checkLogin(const std::string &login) const { return (_login == login); }
 
 /**
- * @brief Вывод данных пользователя в консоль.
+ * @brief Displays the user's data.
+ * @details Prints the user's name, login, and password.
  */
 void User::showUserData() const {
   std::cout << "Name: " << _userName << ", Login: " << _login << ", Password: " << _password << std::endl;
 }
 
+/**
+ * @brief Prints the user's chat list.
+ * @param user Shared pointer to the user whose chat list is to be printed.
+ * @throws UnknownException If the message vector of a chat is empty.
+ * @details Displays each chat with participant details, last message timestamp, and unread message count.
+ * @note Needs to handle deleted users in the list and display unread message counts (marked as TODO).
+ */
 void User::printChatList(const std::shared_ptr<User> &user) const {
   // ДОДЕЛАТЬ ВЫВОД УДАЛЕННОГО ПОЛЬЗОВАТЕЛЯ В СПИСКЕ а также количество новых сообщений в списке
 
@@ -156,7 +144,7 @@ void User::printChatList(const std::shared_ptr<User> &user) const {
         }
       }
     } else {
-      //   std::cout << "Чат удален." << std::endl;
+        std::cout << "Чат удален." << std::endl;
     }
     ++index;
 

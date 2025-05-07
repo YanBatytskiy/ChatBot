@@ -1,36 +1,26 @@
-/**
- * @file code_auth_menu.cpp
- * @brief Реализация начального меню авторизации ChatBot 'Shark'
- * @version 1.0
- * @date 2025
- */
-#include "exception/validation_exception.h"
-#include "system/chat_system.h"
-#include "system/system_function.h"
-
 #include "menu/2_0_login_menu.h"
+#include "exception/validation_exception.h"
 #include "menu/2_1_new_chat_menu.h"
 #include "menu/2_2_chat_list_menu.h"
 #include "menu/2_4_user_profile.h"
-
+#include "system/chat_system.h"
+#include "system/system_function.h"
 #include <cctype>
 #include <iostream>
 #include <ostream>
 
 /**
- * @brief Отображает главное меню авторизации и получает выбор пользователя.
- *
- * Меню предлагает пользователю зарегистрироваться, войти или завершить работу.
- *
- * @return short Выбор пользователя:
- * - 1 — Регистрация пользователя,
- * - 2 — Вход в чат,
- * - 0 — Завершение программы.
+ * @brief Displays the main authorization menu and retrieves user choice.
+ * @return short Value corresponding to the user's choice:
+ * - 1 — User registration
+ * - 2 — Login to chat
+ * - 0 — Exit program
+ * @throws EmptyInputException If input is empty.
+ * @throws IndexOutOfRangeException If input is not 0, 1, or 2.
+ * @details Outputs a text menu to the console, processes user input, and returns the action code.
  */
 short authMenu() { // вывод главного меню
-
   while (true) {
-
     std::cout << std::endl << "ChatBot 'Shark' Версия 1.0. @2025 \n \n";
 
     std::cout << "Выберите пункт меню: " << ::std::endl
@@ -42,10 +32,8 @@ short authMenu() { // вывод главного меню
     int userChoiceNumber;
 
     while (true) {
-
       std::getline(std::cin, userChoice);
       try {
-
         if (userChoice.empty())
           throw EmptyInputException();
 
@@ -58,7 +46,6 @@ short authMenu() { // вывод главного меню
           throw IndexOutOfRangeException(userChoice);
 
         return userChoiceNumber;
-
       } catch (const ValidationException &ex) {
         std::cout << " ! " << ex.what() << " Попробуйте еще раз." << std::endl;
         continue;
@@ -66,14 +53,16 @@ short authMenu() { // вывод главного меню
     } // first while
   } // second while
 }
-//
-//
-//
 
+/**
+ * @brief Handles user choices in the menu after authorization.
+ * @param chatSystem Reference to the chat system.
+ * @throws EmptyInputException If input is empty.
+ * @throws IndexOutOfRangeException If input is not 0, 1, 2, 3, or 4.
+ * @details Displays the post-login menu, processes user input, and directs to appropriate actions (new chat, chat list,
+ * or user profile).
+ */
 void loginMenuChoice(ChatSystem &chatSystem) { // вывод главного меню
-
-  // доделать - продумать передачу по конст ссылке ChatSystem и дополнительный аргумент для изменеиня
-
   int userChoiceNumber;
   std::string userChoice;
 
@@ -92,7 +81,6 @@ void loginMenuChoice(ChatSystem &chatSystem) { // вывод главного м
     while (exit2) {
       std::getline(std::cin, userChoice);
       try {
-
         if (userChoice.empty())
           throw EmptyInputException();
 
@@ -108,25 +96,21 @@ void loginMenuChoice(ChatSystem &chatSystem) { // вывод главного м
         case 1:
           LoginMenu_1NewChat(chatSystem);
           exit2 = false;
-          continue;
-        //   break; // case 1 MainMenu
+          continue; // case 1 MainMenu
         case 2:
           loginMenu_2ChatList(chatSystem);
           exit2 = false;
-          continue;
-          break; // case 2 MainMenu
+          continue; // case 2 MainMenu
         case 3:
           std::cout << "Показать список папок - Under constraction." << std::endl;
           break; // case 3 MainMenu
         case 4:
           loginMenu_4UserProfile(chatSystem);
           exit2 = false;
-          continue;
-          break; // case 4 MainMenu
+          continue; // case 4 MainMenu
         default:
           break; // default MainMenu
         } // switch
-
       } // try
       catch (const ValidationException &ex) {
         std::cout << " ! " << ex.what() << " Попробуйте еще раз." << std::endl;

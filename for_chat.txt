@@ -1,0 +1,3307 @@
+// ===== /home/yanbatytskiy/SynologyDrive/CPP/Linux/ChatBot/src/ChatBot/chat_bot.cpp =====
+#include "menu/0_init_system.h"
+#include "menu/1_registration.h"
+#include "menu/2_0_login_menu.h"
+#include "system/chat_system.h"
+#include <iostream>
+
+/**
+ * @brief Main entry point for the chat system application.
+ * @return 0 on successful execution or exit.
+ * @details Initializes the chat system, handles user authentication (registration/login), and manages the main program
+ * loop.
+ */
+int main() {
+  // Create ChatSystem instance
+  ChatSystem chatSystem;
+
+  // Initialize the system with test data
+  systemInitTest(chatSystem);
+
+  short userChoice;
+
+  // Main program loop
+  while (true) {
+    // Reset active user
+    chatSystem.setActiveUser(nullptr);
+
+    // Set a default active user with login "E"
+    std::shared_ptr<User> activeUser_ptr = findUserbyLogin("E", chatSystem);
+    chatSystem.setActiveUser(activeUser_ptr);
+
+    // Display authentication menu and get user choice
+    userChoice = authMenu();
+
+    // Handle user choice for registration, login, or exit
+    switch (userChoice) {
+    case 0: // Exit the program
+      return 0;
+    case 1: // Register a new user
+      userRegistration(chatSystem);
+      break;
+    case 2: // Log in an existing user
+      if (userLoginInsystem(chatSystem))
+        loginMenuChoice(chatSystem);
+      break;
+    default:
+      break; // Handle invalid choices
+    }
+  }
+
+  std::cout << std::endl;
+  return 0;
+}
+
+
+// ===== /home/yanbatytskiy/SynologyDrive/CPP/Linux/ChatBot/src/chat/chat.cpp =====
+#include "chat/chat.h"
+#include "exception/validation_exception.h"
+#include <algorithm>
+#include <iostream>
+
+/**
+ * @brief Adds a new participant to the chat.
+ * @param user Shared pointer to the user to be added.
+ * @details Creates a Participant struct, initializes it with the user, sets last read message index to 0, and adds it
+ * to the participants vector.
+ */
+void Chat::addParticipant(const std::shared_ptr<User> &user) {
+  Participant participant;
+  participant._user = user;
+  participant._lastReadMessageIndex = 0;
+  _participants.push_back(participant);
+}
+
+/**
+ * @brief Adds a message to the chat.
+ * @param message Shared pointer to the message to be added.
+ * @details Appends the message to the messages vector.
+ */
+void Chat::addMessage(const std::shared_ptr<Message> &message) { _messages.push_back(message); }
+
+/**
+ * @brief Sets the deletedFromChat status for a specific user.
+ * @param user Shared pointer to the user.
+ * @param deletedFromChat Boolean indicating if the user is deleted from the chat.
+ * @throws UserNotInListException If the user is not found in the participants list.
+ * @details Finds the participant and updates their deletedFromChat status. Prints error if user is not found.
+ */
+void Chat::setDeletedFromChat(const std::shared_ptr<User> &user, const bool deletedFromChat) {
+  auto &participants = _participants;
+  auto it = std::find_if(participants.begin(), participants.end(), [&user](const Participant &participant) {
+    auto user_ptr = participant._user.lock();
+    return user_ptr && (user_ptr == user);
+  });
+  try {
+    if (it != participants.end())
+      it->_deletedFromChat = deletedFromChat;
+    else
+      throw UserNotInListException();
+  } catch (const ValidationException &ex) {
+    std::cout << " ! " << ex.what() << " Попробуйте еще раз." << std::endl;
+  }
+}
+
+/**
+ * @brief Retrieves the list of messages in the chat.
+ * @return Constant reference to the vector of messages.
+ */
+const std::vector<std::shared_ptr<Message>> &Chat::getMessages() const { return _messages; }
+
+/**
+ * @brief Retrieves the list of participants in the chat.
+ * @return Constant reference to the vector of participants.
+ */
+const std::vector<Participant> &Chat::getParticipants() const { return _participants; }
+
+/**
+ * @brief Gets the index of the last message read by a specific user.
+ * @param user Shared pointer to the user.
+ * @return The index of the last read message, or 0 if user is not found.
+ * @throws UserNotInListException If the user is not found in the participants list.
+ * @details Finds the participant and returns their last read message index. Prints error and returns 0 if user is not
+ * found.
+ */
+std::size_t Chat::getLastReadMessageIndex(const std::shared_ptr<User> &user) const {
+  const auto &participants = _participants;
+  auto it = std::find_if(participants.begin(), participants.end(), [&user](const Participant &participant) {
+    auto user_ptr = participant._user.lock();
+    return user_ptr && (user_ptr == user);
+  });
+  try {
+    if (it != participants.end())
+      return it->_lastReadMessageIndex;
+    else
+      throw UserNotInListException();
+  } catch (const ValidationException &ex) {
+    std::cout << " ! " << ex.what() << " Попробуйте еще раз." << std::endl;
+    return 0;
+  }
+}
+
+/**
+ * @brief Checks if a user has been deleted from the chat.
+ * @param user Shared pointer to the user.
+ * @return True if the user is deleted from the chat, false otherwise, or true if user is not found.
+ * @throws UserNotInListException If the user is not found in the participants list.
+ * @details Finds the participant and returns their deletedFromChat status. Prints error and returns true if user is not
+ * found.
+ */
+bool Chat::getDeletedFromChat(const std::shared_ptr<User> &user) const {
+  const auto &participants = _participants;
+  auto it = std::find_if(participants.begin(), participants.end(), [&user](const Participant &participant) {
+    auto user_ptr = participant._user.lock();
+    return user_ptr && (user_ptr == user);
+  });
+  try {
+    if (it != participants.end())
+      return it->_deletedFromChat;
+    else
+      throw UserNotInListException();
+  } catch (const ValidationException &ex) {
+    std::cout << " ! " << ex.what() << " Попробуйте еще раз." << std::endl;
+    return true;
+  }
+}
+
+/**
+ * @brief Prints the full chat for a specific user.
+ * @param currentUser Shared pointer to the user viewing the chat.
+ * @details Iterates through messages and calls their printMessage method. Prints "Cообщуний нет." if the chat is empty.
+ * @note The parameter name in the header (¤tUser) is a typo and should be corrected to currentUser.
+ */
+void Chat::printChat(const std::shared_ptr<User> &currentUser) {
+  if (!_messages.empty()) {
+    for (const auto &message : _messages) {
+      message->printMessage(currentUser);
+    }
+  } else
+    std::cout << "Cообщуний нет." << std::endl;
+}
+
+/**
+ * @brief Updates the last read message index for a specific user.
+ * @param user Shared pointer to the user.
+ * @param newLastReadMessageIndex The new index of the last read message.
+ * @throws UserNotInListException If the user is not found in the participants list.
+ * @details Finds the participant by login and updates their last read message index. Prints error if user is not found.
+ */
+void Chat::updateLastReadMessageIndex(const std::shared_ptr<User> &user, std::size_t newLastReadMessageIndex) {
+  auto it = std::find_if(_participants.begin(), _participants.end(), [&user](const Participant &partisipient) {
+    auto user_ptr = partisipient._user.lock();
+    return user_ptr && (user_ptr->getLogin() == user->getLogin());
+  });
+  try {
+    if (it != _participants.end())
+      it->_lastReadMessageIndex = newLastReadMessageIndex;
+    else
+      throw UserNotInListException();
+  } catch (const ValidationException &ex) {
+    std::cout << " ! " << ex.what() << std::endl;
+  }
+}
+
+/**
+ * @brief Removes a participant from the chat (to be implemented).
+ * @param user Shared pointer to the user to be removed.
+ * @note This method is currently commented out and requires implementation.
+ */
+// void Chat::removeParticipant(const std::shared_ptr<User> &user) {
+// }
+
+
+// ===== /home/yanbatytskiy/SynologyDrive/CPP/Linux/ChatBot/src/chat/chat.h =====
+#pragma once
+
+#include "message/message.h"
+#include "user/user.h"
+#include <memory>
+#include <vector>
+
+/**
+ * @struct Participant
+ * @brief Represents a participant in a chat.
+ */
+struct Participant {
+  std::weak_ptr<User> _user; ///< Weak reference to the user.
+  std::size_t _lastReadMessageIndex; ///< Index of the last message read by the participant.
+  bool _deletedFromChat; ///< Indicates if the participant was removed from the chat.
+};
+
+/**
+ * @class Chat
+ * @brief Manages a chat system with participants and messages.
+ */
+class Chat {
+private:
+  std::vector<Participant> _participants; ///< List of chat participants.
+  std::vector<std::shared_ptr<Message>> _messages; ///< List of messages in the chat.
+
+public:
+  /**
+   * @brief Default constructor for an empty chat.
+   * @details The message vector is automatically initialized as empty by std::vector.
+   */
+  Chat() = default;
+
+  /**
+   * @brief Default virtual destructor.
+   */
+  virtual ~Chat() = default;
+
+  /**
+   * @brief Adds a new participant to the chat.
+   * @param user Shared pointer to the user to be added.
+   */
+  void addParticipant(const std::shared_ptr<User> &user);
+
+  /**
+   * @brief Adds a message to the chat.
+   * @param message Shared pointer to the message to be added.
+   */
+  void addMessage(const std::shared_ptr<Message> &message);
+
+  /**
+   * @brief Sets the deletedFromChat status for a specific user.
+   * @param user Shared pointer to the user.
+   * @param deletedFromChat Boolean indicating if the user is deleted from the chat.
+   */
+  void setDeletedFromChat(const std::shared_ptr<User> &user, const bool deletedFromChat);
+
+  /**
+   * @brief Retrieves the list of messages in the chat.
+   * @return Constant reference to the vector of messages.
+   */
+  const std::vector<std::shared_ptr<Message>> &getMessages() const;
+
+  /**
+   * @brief Retrieves the list of participants in the chat.
+   * @return Constant reference to the vector of participants.
+   */
+  const std::vector<Participant> &getParticipants() const;
+
+  /**
+   * @brief Gets the index of the last message read by a specific user.
+   * @param user Shared pointer to the user.
+   * @return The index of the last read message.
+   */
+  std::size_t getLastReadMessageIndex(const std::shared_ptr<User> &user) const;
+
+  /**
+   * @brief Checks if a user has been deleted from the chat.
+   * @param user Shared pointer to the user.
+   * @return True if the user is deleted from the chat, false otherwise.
+   */
+  bool getDeletedFromChat(const std::shared_ptr<User> &user) const;
+
+  /**
+   * @brief Prints the full chat for a specific user.
+   * @param currentUser Shared pointer to the user viewing the chat.
+   */
+  void printChat(const std::shared_ptr<User> &currentUser);
+
+  /**
+   * @brief Updates the last read message index for a specific user.
+   * @param user Shared pointer to the user.
+   * @param newLastReadMessageIndex The new index of the last read message.
+   */
+  void updateLastReadMessageIndex(const std::shared_ptr<User> &user, std::size_t newLastReadMessageIndex);
+
+  /**
+   * @brief Removes a participant from the chat (to be implemented).
+   * @param user Shared pointer to the user to be removed.
+   */
+  // void removeParticipant(const std::shared_ptr<User> &user);
+};
+
+
+// ===== /home/yanbatytskiy/SynologyDrive/CPP/Linux/ChatBot/src/exception/login_exception.h =====
+#pragma once
+#include "validation_exception.h"
+
+/**
+ * @class LoginException
+ * @brief Base exception class for login-related errors.
+ * @details Inherits from ValidationException and prepends "Sign In Exception: " to the provided message.
+ */
+class LoginException : public ValidationException {
+public:
+  /**
+   * @brief Constructor for LoginException.
+   * @param message The error message describing the login issue.
+   */
+  explicit LoginException(const std::string &message) : ValidationException("Sign In Exception: " + message){};
+};
+
+/**
+ * @class UserNotFoundException
+ * @brief Exception thrown when a user is not found during login.
+ * @details Inherits from LoginException and provides a specific error message.
+ */
+class UserNotFoundException : public LoginException {
+public:
+  /**
+   * @brief Default constructor for UserNotFoundException.
+   * @details Sets the error message to "!!!Такой пользователь не найден. ".
+   */
+  UserNotFoundException() : LoginException("!!!Такой пользователь не найден. "){};
+};
+
+/**
+ * @class IncorrectPasswordException
+ * @brief Exception thrown when an incorrect password is provided during login.
+ * @details Inherits from LoginException and provides a specific error message.
+ */
+class IncorrectPasswordException : public LoginException {
+public:
+  /**
+   * @brief Default constructor for IncorrectPasswordException.
+   * @details Sets the error message to "!!!Неверный пароль.".
+   */
+  IncorrectPasswordException() : LoginException("!!!Неверный пароль."){};
+};
+
+
+// ===== /home/yanbatytskiy/SynologyDrive/CPP/Linux/ChatBot/src/exception/my_exception.h =====
+#pragma once
+#include <string>
+
+/**
+ * @class MyException
+ * @brief Custom exception class for handling errors.
+ * @details Inherits from std::exception and stores a custom error message.
+ */
+class MyException : public std::exception {
+private:
+  std::string _message; ///< The error message.
+
+public:
+  /**
+   * @brief Constructor for MyException.
+   * @param message The error message to be stored.
+   */
+  explicit MyException(const std::string &message) : _message(message) {};
+
+  /**
+   * @brief Returns the error message.
+   * @return A C-string representation of the error message.
+   * @details Overrides the what() method from std::exception.
+   */
+  const char *what() const noexcept override { return _message.c_str(); };
+};
+
+
+// ===== /home/yanbatytskiy/SynologyDrive/CPP/Linux/ChatBot/src/exception/validation_exception.h =====
+#pragma once
+#include "my_exception.h"
+
+/**
+ * @class ValidationException
+ * @brief Base exception class for validation-related errors.
+ * @details Inherits from MyException and prepends "Validation Exception: " to the provided message.
+ */
+class ValidationException : public MyException {
+public:
+  /**
+   * @brief Constructor for ValidationException.
+   * @param message The error message describing the validation issue.
+   */
+  explicit ValidationException(const std::string &message) : MyException("Validation Exception: " + message) {};
+};
+
+/**
+ * @class EmptyInputException
+ * @brief Exception thrown when input is empty.
+ * @details Inherits from ValidationException with a specific error message.
+ */
+class EmptyInputException : public ValidationException {
+public:
+  /**
+   * @brief Default constructor for EmptyInputException.
+   * @details Sets the error message to "!!!Вы ничего не ввели.".
+   */
+  EmptyInputException() : ValidationException("!!!Вы ничего не ввели.") {};
+};
+
+/**
+ * @class InvalidCharacterException
+ * @brief Exception thrown when an invalid character is detected.
+ * @details Inherits from ValidationException and includes the invalid character in the message.
+ */
+class InvalidCharacterException : public ValidationException {
+public:
+  /**
+   * @brief Constructor for InvalidCharacterException.
+   * @param ch The invalid character.
+   * @details Sets the error message to include the invalid character.
+   */
+  InvalidCharacterException(const char &ch)
+      : ValidationException(std::string("!!!Недопустимый символ '") + ch + "'") {};
+};
+
+/**
+ * @class IndexOutOfRangeException
+ * @brief Exception thrown when input is out of the valid range.
+ * @details Inherits from ValidationException and supports string or char input in the message.
+ */
+class IndexOutOfRangeException : public ValidationException {
+public:
+  /**
+   * @brief Constructor for IndexOutOfRangeException (string input).
+   * @param st The input string that is out of range.
+   */
+  IndexOutOfRangeException(const std::string &st)
+      : ValidationException(std::string("!!!Ввод '" + st + "' вне допустимого диапазона.")) {};
+  /**
+   * @brief Constructor for IndexOutOfRangeException (char input).
+   * @param st The input char that is out of range.
+   */
+  IndexOutOfRangeException(const char &st)
+      : ValidationException(std::string("!!!Ввод '") + st + "' вне допустимого диапазона.") {};
+};
+
+/**
+ * @class InvalidQuantityCharacterException
+ * @brief Exception thrown when the number of characters is incorrect.
+ * @details Inherits from ValidationException with a specific error message.
+ */
+class InvalidQuantityCharacterException : public ValidationException {
+public:
+  /**
+   * @brief Default constructor for InvalidQuantityCharacterException.
+   * @details Sets the error message to "!!!Некорректное количество символов.".
+   */
+  InvalidQuantityCharacterException() : ValidationException("!!!Некорректное количество символов.") {};
+};
+
+/**
+ * @class NonCapitalCharacterException
+ * @brief Exception thrown when a capital letter is required but not provided.
+ * @details Inherits from ValidationException with a specific error message.
+ */
+class NonCapitalCharacterException : public ValidationException {
+public:
+  /**
+   * @brief Default constructor for NonCapitalCharacterException.
+   * @details Sets the error message to "!!!Требуется заглавная буква.".
+   */
+  NonCapitalCharacterException() : ValidationException("!!!Требуется заглавная буква.") {};
+};
+
+/**
+ * @class NonDigitalCharacterException
+ * @brief Exception thrown when a digit is required but not provided.
+ * @details Inherits from ValidationException with a specific error message.
+ */
+class NonDigitalCharacterException : public ValidationException {
+public:
+  /**
+   * @brief Default constructor for NonDigitalCharacterException.
+   * @details Sets the error message to "!!!Требуется цифра.".
+   */
+  NonDigitalCharacterException() : ValidationException("!!!Требуется цифра.") {};
+};
+
+/**
+ * @class ChatNotFoundException
+ * @brief Exception thrown when a chat is not found.
+ * @details Inherits from ValidationException with a specific error message.
+ */
+class ChatNotFoundException : public ValidationException {
+public:
+  /**
+   * @brief Default constructor for ChatNotFoundException.
+   * @details Sets the error message to "!!!Ошибка. Чат не найден. Обратитесь к администратору".
+   */
+  ChatNotFoundException() : ValidationException("!!!Ошибка. Чат не найден. Обратитесь к администратору") {};
+};
+
+/**
+ * @class UnknownException
+ * @brief Exception thrown for unknown errors.
+ * @details Inherits from ValidationException with a generic error message.
+ */
+class UnknownException : public ValidationException {
+public:
+  /**
+   * @brief Constructor for UnknownException.
+   * @param str Additional information about the error.
+   * @details Sets the error message to "!!!Неизвестная ошибка. ".
+   */
+  UnknownException(const std::string &str) : ValidationException("!!!Неизвестная ошибка. ") {};
+};
+
+/**
+ * @class BadWeakException
+ * @brief Exception thrown when a weak_ptr cannot be locked.
+ * @details Inherits from ValidationException with a specific error message.
+ */
+class BadWeakException : public ValidationException {
+public:
+  /**
+   * @brief Constructor for BadWeakException.
+   * @param str Additional information about the error.
+   * @details Sets the error message to "!!!Потеря weak_ptr. ".
+   */
+  BadWeakException(const std::string &str) : ValidationException("!!!Потеря weak_ptr. ") {};
+};
+
+/**
+ * @class UserNotInListException
+ * @brief Exception thrown when a user is not found in the participants list.
+ * @details Inherits from ValidationException with a specific error message.
+ */
+class UserNotInListException : public ValidationException {
+public:
+  /**
+   * @brief Default constructor for UserNotInListException.
+   * @details Sets the error message to "!!!Пользователя нет среди участников чата.".
+   */
+  UserNotInListException() : ValidationException("!!!Пользователя нет среди участников чата.") {};
+};
+
+
+// ===== /home/yanbatytskiy/SynologyDrive/CPP/Linux/ChatBot/src/menu/0_init_system.cpp =====
+#include "menu/0_init_system.h"
+#include "chat/chat.h"
+#include "exception/validation_exception.h"
+#include "system/system_function.h"
+#include "message/message_content_struct.h"
+#include "user/user.h"
+#include "user/user_chat_list.h"
+#include <iostream>
+#include <memory>
+#include <vector>
+
+/**
+ * @brief Constructor for InitDataArray.
+ * @param messageText The text content of the message.
+ * @param timeStamp The timestamp of the message.
+ * @param sender Shared pointer to the sender user.
+ * @param _recipients Vector of shared pointers to recipient users.
+ * @details Initializes the InitDataArray struct with message details.
+ */
+InitDataArray::InitDataArray(std::string messageText, std::string timeStamp, std::shared_ptr<User> sender,
+                             std::vector<std::shared_ptr<User>> _recipients)
+    : _messageText(messageText), _timeStamp(timeStamp), _sender(sender), _recipients(_recipients) {}
+
+/**
+ * @brief Initializes the chat system with test data.
+ * @param _chatsystem Reference to the ChatSystem object to be initialized.
+ * @details Creates users, adds them to the system, creates chat lists, and sets up two chats (one private, one group) with sample messages.
+ */
+void systemInitTest(ChatSystem &_chatsystem) {
+  // Создание пользователей
+  auto Alex2104_ptr = std::make_shared<User>("alex1980", "Sasha", "User01");
+  auto Elena1510_ptr = std::make_shared<User>("elena1980", "Elena", "User0");
+  auto Serg0101_ptr = std::make_shared<User>("serg1980", "Sergei", "User0");
+  auto Vit2504_ptr = std::make_shared<User>("vit1980", "Vitaliy", "User0");
+  auto mar1980_ptr = std::make_shared<User>("mar1980", "Mariya", "User0");
+  auto fed1980_ptr = std::make_shared<User>("fed1980", "Fedor", "User0");
+  auto vera1980_ptr = std::make_shared<User>("vera1980", "Vera", "User0");
+  auto yak1980_ptr = std::make_shared<User>("yak1980_ptr", "Yakov", "User0");
+
+  Alex2104_ptr->showUserData();
+  Elena1510_ptr->showUserData();
+  Serg0101_ptr->showUserData();
+  Vit2504_ptr->showUserData();
+  mar1980_ptr->showUserData();
+  fed1980_ptr->showUserData();
+  vera1980_ptr->showUserData();
+  yak1980_ptr->showUserData();
+
+  // Добавление пользователей в систему
+  _chatsystem.addUser(Alex2104_ptr);
+  _chatsystem.addUser(Elena1510_ptr);
+  _chatsystem.addUser(Serg0101_ptr);
+  _chatsystem.addUser(Vit2504_ptr);
+  _chatsystem.addUser(mar1980_ptr);
+  _chatsystem.addUser(fed1980_ptr);
+  _chatsystem.addUser(vera1980_ptr);
+  _chatsystem.addUser(yak1980_ptr);
+
+  // Создание списков чатов для пользователей
+  auto Alex2104_ChatList_ptr = std::make_shared<UserChatList>(Alex2104_ptr);
+  auto Elena1510_ChatList_ptr = std::make_shared<UserChatList>(Elena1510_ptr);
+  auto Serg0101_ChatList_ptr = std::make_shared<UserChatList>(Serg0101_ptr);
+  auto Vit2504_ChatList_ptr = std::make_shared<UserChatList>(Vit2504_ptr);
+  auto mar1980_ChatList_ptr = std::make_shared<UserChatList>(mar1980_ptr);
+  auto fed1980_ChatList_ptr = std::make_shared<UserChatList>(fed1980_ptr);
+  auto vera1980_ChatList_ptr = std::make_shared<UserChatList>(vera1980_ptr);
+  auto yak1980_ChatList_ptr = std::make_shared<UserChatList>(yak1980_ptr);
+
+  Alex2104_ptr->createChatList(Alex2104_ChatList_ptr);
+  Elena1510_ptr->createChatList(Elena1510_ChatList_ptr);
+  Serg0101_ptr->createChatList(Serg0101_ChatList_ptr);
+  Vit2504_ptr->createChatList(Vit2504_ChatList_ptr);
+  mar1980_ptr->createChatList(mar1980_ChatList_ptr);
+  fed1980_ptr->createChatList(fed1980_ChatList_ptr);
+  vera1980_ptr->createChatList(vera1980_ChatList_ptr);
+  yak1980_ptr->createChatList(yak1980_ChatList_ptr);
+
+  // Создание первого чата: Sasha и Elena (один на один)
+  std::vector<std::shared_ptr<User>> recipients;
+  std::vector<std::weak_ptr<User>> participants;
+
+  recipients.push_back(Alex2104_ptr);
+  participants.push_back(Elena1510_ptr);
+  participants.push_back(Alex2104_ptr);
+
+  auto chat_ptr = std::make_shared<Chat>();
+  chat_ptr->addParticipant(Elena1510_ptr);
+  chat_ptr->addParticipant(Alex2104_ptr);
+
+  for (const auto &chatUser : participants) {
+    try {
+      if (auto chatUser_ptr = chatUser.lock()) {
+
+        // добавление чата в чат-лист
+        auto chatList = chatUser_ptr->getUserChatList();
+        if (chatList) {
+          chatList->addChat(chat_ptr);
+        } else
+          throw UnknownException("У пользователя нет списка чатов! init_system.");
+      } else
+        throw UnknownException("weak_ptr пустой. init_system.");
+    } catch (const ValidationException &ex) {
+      std::cout << " ! " << ex.what() << std::endl;
+      return;
+    }
+  }
+
+  _chatsystem.addChat(chat_ptr);
+
+  InitDataArray Elena_Alex1("Привет", "01-04-2025,12:00:00", Elena1510_ptr, recipients);
+  addMessageToChat(Elena_Alex1, chat_ptr);
+
+  recipients.clear();
+  recipients.push_back(Elena1510_ptr);
+
+  InitDataArray Elena_Alex2("Хай! как делишки?", "01-04-2025,12:05:00", Alex2104_ptr, recipients);
+  addMessageToChat(Elena_Alex2, chat_ptr);
+
+  recipients.clear();
+  recipients.push_back(Alex2104_ptr);
+
+  InitDataArray Elena_Alex3("Хорошо, как насчет кофе?", "01-04-2025,12:07:00", Elena1510_ptr, recipients);
+  addMessageToChat(Elena_Alex3, chat_ptr);
+
+  changeLastReadIndexForSender(Elena1510_ptr, chat_ptr);
+
+  // проверки
+  //   chat_ptr->printChat(Elena1510_ptr);
+
+  // Создание второго чата: Elena, Sasha и Сергей (групповой чат)
+  chat_ptr.reset();
+  recipients.clear();
+  participants.clear();
+
+  recipients.push_back(Alex2104_ptr);
+  recipients.push_back(Serg0101_ptr);
+  recipients.push_back(mar1980_ptr);
+  recipients.push_back(yak1980_ptr);
+  participants.push_back(Elena1510_ptr);
+  participants.push_back(Alex2104_ptr);
+  participants.push_back(Serg0101_ptr);
+  participants.push_back(mar1980_ptr);
+  participants.push_back(yak1980_ptr);
+
+  chat_ptr = std::make_shared<Chat>();
+  chat_ptr->addParticipant(Elena1510_ptr);
+  chat_ptr->addParticipant(Alex2104_ptr);
+  chat_ptr->addParticipant(Serg0101_ptr);
+  chat_ptr->addParticipant(mar1980_ptr);
+  chat_ptr->addParticipant(yak1980_ptr);
+
+  for (const auto &chatUser : participants) {
+    if (auto chatUser_ptr = chatUser.lock()) {
+      auto chatList = chatUser_ptr->getUserChatList();
+      if (chatList) {
+        chatList->addChat(chat_ptr);
+
+      } else {
+        std::cout << "[Ошибка] У пользователя нет списка чатов!\n" << std::endl;
+      }
+    }
+  }
+  _chatsystem.addChat(chat_ptr);
+
+  InitDataArray Elena_Alex_Serg1("Всем Привееет!?", "01-04-2025,13:00:00", Elena1510_ptr, recipients);
+  addMessageToChat(Elena_Alex_Serg1, chat_ptr);
+
+  recipients.clear();
+  recipients.push_back(Elena1510_ptr);
+  recipients.push_back(Serg0101_ptr);
+  recipients.push_back(mar1980_ptr);
+  recipients.push_back(yak1980_ptr);
+
+  InitDataArray Elena_Alex_Serg2("И тебе не хворать!?", "01-04-2025,13:02:00", Alex2104_ptr, recipients);
+  addMessageToChat(Elena_Alex_Serg2, chat_ptr);
+
+  recipients.clear();
+  recipients.push_back(Elena1510_ptr);
+  recipients.push_back(Alex2104_ptr);
+  recipients.push_back(mar1980_ptr);
+  recipients.push_back(yak1980_ptr);
+
+  InitDataArray Elena_Alex_Serg3("Т Organizать всем здрассьте.", "01-04-2025,13:10:15", Serg0101_ptr, recipients);
+  addMessageToChat(Elena_Alex_Serg3, chat_ptr);
+
+  recipients.clear();
+  recipients.push_back(Serg0101_ptr);
+  recipients.push_back(Alex2104_ptr);
+  recipients.push_back(mar1980_ptr);
+  recipients.push_back(yak1980_ptr);
+
+  InitDataArray Elena_Alex_Serg4("Куда идем?", "01-04-2025,13:12:09", Elena1510_ptr, recipients);
+  addMessageToChat(Elena_Alex_Serg4, chat_ptr);
+
+  recipients.clear();
+  recipients.push_back(Elena1510_ptr);
+  recipients.push_back(Alex2104_ptr);
+  recipients.push_back(mar1980_ptr);
+  recipients.push_back(yak1980_ptr);
+
+  InitDataArray Elena_Alex_Serg5("В кино!", "01-04-2025,13:33:00", Serg0101_ptr, recipients);
+  addMessageToChat(Elena_Alex_Serg5, chat_ptr);
+
+  chat_ptr->updateLastReadMessageIndex(Elena1510_ptr, chat_ptr->getMessages().size() - 1);
+
+  // проверки
+  //    changeLastReadIndexForSender(Elena1510_ptr, chat_ptr);
+  //   chat_ptr->printChat(Elena1510_ptr);
+}
+
+
+
+
+// ===== /home/yanbatytskiy/SynologyDrive/CPP/Linux/ChatBot/src/menu/0_init_system.h =====
+/**
+ * @file code_init_system.h
+ * @brief Заголовочный файл для автоматической инициализации тестовой системы чатов и сообщений.
+ *
+ * Содержит структуру данных для описания сообщений и функции для создания тестовых пользователей,
+ * чатов и сообщений в системе ChatBot.
+ */
+
+#pragma once
+
+#include "message/message_content_struct.h"
+#include "system/chat_system.h"
+#include <memory>
+
+void addMessageToChat(const InitDataArray &initDataArray, std::shared_ptr<Chat> &chat);
+
+/**
+ * @brief Инициализирует тестовую систему: создаёт пользователей, чаты и сообщения.
+ *
+ * @param _chatsystem Система чатов для заполнения тестовыми данными
+ */
+void systemInitTest(ChatSystem &_chatsystem);
+
+
+
+// ===== /home/yanbatytskiy/SynologyDrive/CPP/Linux/ChatBot/src/menu/1_registration.cpp =====
+#include "menu/1_registration.h"
+#include "exception/login_exception.h"
+#include "exception/validation_exception.h"
+#include "system/chat_system.h"
+#include "user/user.h"
+#include "user/user_chat_list.h"
+#include <algorithm>
+#include <cctype>
+#include <cstddef>
+#include <iostream>
+#include <string>
+
+/**
+ * @brief Validates login or password input against specified constraints.
+ * @param inputData The input string to validate.
+ * @param contentLengthMin Minimum allowed length.
+ * @param contentLengthMax Maximum allowed length.
+ * @param isPassword True if validating a password, false for login.
+ * @return True if the input is valid.
+ * @throws InvalidQuantityCharacterException If the length is out of bounds.
+ * @throws InvalidCharacterException If non-alphanumeric characters are found.
+ * @throws NonCapitalCharacterException If password lacks a capital letter.
+ * @throws NonDigitalCharacterException If password lacks a digit.
+ */
+bool checkNewDataInputForLimits(const std::string &inputData, std::size_t contentLengthMin,
+                                std::size_t contentLengthMax, bool isPassword) {
+  if (inputData.length() < contentLengthMin || inputData.length() > contentLengthMax)
+    throw InvalidQuantityCharacterException();
+
+  bool isCapital = false, isNumber = false;
+
+  for (char ch : inputData) {
+    if (!std::isalnum(ch))
+      throw InvalidCharacterException(ch);
+
+    if (std::isdigit(ch))
+      isNumber = true;
+
+    if (std::isupper(ch))
+      isCapital = true;
+  }
+
+  if (isPassword) {
+    if (!isCapital)
+      throw NonCapitalCharacterException();
+    if (!isNumber)
+      throw NonDigitalCharacterException();
+  }
+
+  return true;
+}
+
+/**
+ * @brief Validates user input with retry attempts.
+ * @param prompt Message displayed to the user.
+ * @param dataLengthMin Minimum length of the input.
+ * @param dataLengthMax Maximum length of the input.
+ * @param isPassword True if input is a password.
+ * @param userData Structure for storing/comparing input data.
+ * @param newUserData True if creating a new user.
+ * @param chatSystem Reference to the chat system.
+ * @return Validated input string.
+ * @throws EmptyInputException If input is empty.
+ */
+std::string inputDataValidation(const std::string &prompt, std::size_t dataLengthMin, std::size_t dataLengthMax,
+                                bool isPassword, UserData userData, bool newUserData, const ChatSystem &chatSystem) {
+  std::string inputData;
+
+  while (true) {
+    std::cout << prompt << std::endl;
+    std::getline(std::cin, inputData);
+    try {
+      if (inputData.empty())
+        throw EmptyInputException();
+
+      if (inputData == "0")
+        return inputData;
+
+      if (newUserData)
+        checkNewDataInputForLimits(inputData, dataLengthMin, dataLengthMax, isPassword);
+
+      return inputData;
+    } catch (const ValidationException &ex) {
+      std::cout << " ! " << ex.what() << " Попробуйте еще раз." << std::endl;
+      continue;
+    }
+  }
+}
+
+/**
+ * @brief Finds a user by login in the chat system.
+ * @param userLogin The login to search for.
+ * @param chatSystem Reference to the chat system.
+ * @return Shared pointer to the found user, or nullptr if not found.
+ */
+std::shared_ptr<User> findUserbyLogin(const std::string &userLogin, const ChatSystem &chatSystem) {
+  const auto &users = chatSystem.getUsers();
+  auto it = std::find_if(users.begin(), users.end(),
+                         [&](const std::shared_ptr<User> &u) { return u->getLogin() == userLogin; });
+  return (it != users.end()) ? *it : nullptr;
+}
+
+/**
+ * @brief Checks if a user with the specified login exists.
+ * @param login The login to check.
+ * @param chatSystem Reference to the chat system.
+ * @return Shared pointer to the user if found, or nullptr if not found.
+ */
+const std::shared_ptr<User> checkLoginExists(const std::string &login, const ChatSystem &chatSystem) {
+  for (const auto &user : chatSystem.getUsers()) {
+    if (user->getLogin() == login)
+      return user;
+  }
+  return nullptr;
+}
+
+/**
+ * @brief Verifies if the provided password matches the user's password.
+ * @param userData Structure containing login and password.
+ * @param chatSystem Reference to the chat system.
+ * @return True if the password is valid, false otherwise.
+ */
+bool checkPasswordValidForUser(const UserData &userData, const ChatSystem &chatSystem) {
+  auto user = findUserbyLogin(userData._login, chatSystem);
+  return user && userData._password == user->getPassword();
+}
+
+/**
+ * @brief Prompts and validates a new user login.
+ * @param userData Structure to store the validated login.
+ * @param chatSystem Reference to the chat system for uniqueness checks.
+ */
+void inputNewLogin(UserData &userData, const ChatSystem &chatSystem) {
+  while (true) {
+    std::size_t dataLengthMin = 5;
+    std::size_t dataLengthMax = 15;
+    std::string prompt;
+
+    prompt = "Введите новый Логин либо 0 для выхода в предыдущее меню. Логин не менее " +
+             std::to_string(dataLengthMin) + "символов и не более " + std::to_string(dataLengthMax) +
+             " символов (можно использовать только латинские буквы и цифры) - ";
+
+    std::string newLogin = inputDataValidation(prompt, dataLengthMin, dataLengthMax, false, userData, true, chatSystem);
+    if (newLogin == "0")
+      return;
+    if (checkLoginExists(newLogin, chatSystem)) {
+      std::cerr << "Логин уже занят.\n";
+      continue;
+    }
+
+    userData._login = newLogin;
+    return;
+  }
+}
+
+/**
+ * @brief Prompts and validates a new user password.
+ * @param userData Structure to store the validated password.
+ * @param chatSystem Reference to the chat system.
+ */
+void inputNewPassword(UserData &userData, const ChatSystem &chatSystem) {
+  std::size_t dataLengthMin = 5;
+  std::size_t dataLengthMax = 10;
+  std::string prompt;
+
+  prompt = "Введите новый Пароль либо 0 для выхода в предыдущее меню. Пароль не менее " +
+           std::to_string(dataLengthMin) + "символов и не более " + std::to_string(dataLengthMax) +
+           " символов обязательно использовать минимум одну заглавную букву и одну цифру (можно использовать только "
+           "латинские буквы и цифры) - ";
+
+  std::string newPassword = inputDataValidation(prompt, dataLengthMin, dataLengthMax, true, userData, true, chatSystem);
+  if (newPassword != "0")
+    userData._password = newPassword;
+}
+
+/**
+ * @brief Prompts and validates a new user display name.
+ * @param userData Structure to store the validated name.
+ * @param chatSystem Reference to the chat system.
+ */
+void inputNewName(UserData &userData, const ChatSystem &chatSystem) {
+  std::size_t dataLengthMin = 3;
+  std::size_t dataLengthMax = 10;
+  std::string prompt;
+
+  prompt = "Введите желаемое Имя для отображения, не менее " + std::to_string(dataLengthMin) + "символов и не более " +
+           std::to_string(dataLengthMax) + " символов, (можно использовать только латинские буквы и цифры) - ";
+
+  std::string newName = inputDataValidation(prompt, dataLengthMin, dataLengthMax, false, userData, true, chatSystem);
+  if (newName != "0")
+    userData._name = newName;
+}
+
+/**
+ * @brief Performs the full registration process for a new user.
+ * @param chatSystem Reference to the chat system.
+ * @details Handles input and validation of login, password, and name, then adds the user to the system.
+ */
+void userRegistration(ChatSystem &chatSystem) {
+  std::cout << "Регистрация нового пользователя." << std::endl;
+  UserData userData;
+
+  inputNewLogin(userData, chatSystem);
+  if (userData._login.empty())
+    return;
+
+  inputNewPassword(userData, chatSystem);
+  if (userData._password.empty())
+    return;
+
+  inputNewName(userData, chatSystem);
+  if (userData._name.empty())
+    return;
+
+  auto newUser = std::make_shared<User>(userData._login, userData._name, userData._password);
+  chatSystem.addUser(newUser);
+  chatSystem.setActiveUser(newUser);
+  newUser->showUserData();
+  newUser->createChatList(std::make_shared<UserChatList>(newUser));
+}
+
+/**
+ * @brief Authenticates a user in the chat system.
+ * @param chatSystem Reference to the chat system.
+ * @return True if login is successful, false if login fails.
+ * @throws UserNotFoundException If the login does not exist.
+ * @throws IncorrectPasswordException If the password is incorrect.
+ */
+bool userLoginInsystem(ChatSystem &chatSystem) {
+  UserData userData;
+
+  // Login validation
+  while (true) {
+    try {
+      userData._login = inputDataValidation("Введите логин или 0 для выхода:", 0, 0, false, userData, false,
+                                            chatSystem);
+      if (userData._login == "0")
+        return false;
+
+      if (!checkLoginExists(userData._login, chatSystem))
+        throw UserNotFoundException();
+    } catch (const ValidationException &ex) {
+      std::cout << " ! " << ex.what() << " Попробуйте еще раз." << std::endl;
+      continue;
+    }
+    break;
+  }
+
+  auto user = findUserbyLogin(userData._login, chatSystem);
+  chatSystem.setActiveUser(user);
+  return true;
+
+  // Password validation
+  while (true) {
+    try {
+      userData._password = inputDataValidation("Введите пароль (или 0 для выхода):", 0, 0, true, userData, false,
+                                               chatSystem);
+      if (userData._password == "0")
+        return false;
+
+      if (!checkPasswordValidForUser(userData, chatSystem))
+        throw IncorrectPasswordException();
+
+      auto user = findUserbyLogin(userData._login, chatSystem);
+      chatSystem.setActiveUser(user);
+      return true;
+    } catch (const ValidationException &ex) {
+      std::cout << " ! " << ex.what() << " Попробуйте еще раз." << std::endl;
+      continue;
+    }
+  }
+}
+
+
+
+// ===== /home/yanbatytskiy/SynologyDrive/CPP/Linux/ChatBot/src/menu/1_registration.h =====
+#pragma once
+#include "system/chat_system.h"
+#include <cstddef>
+#include <memory>
+#include <string>
+
+/**
+ * @brief Structure to store user input data for registration or login.
+ */
+struct UserData {
+  std::string _login;    ///< User login.
+  std::string _password; ///< User password.
+  std::string _name;     ///< User's display name.
+};
+
+/**
+ * @brief Validates login or password input against specified constraints.
+ * @param inputData The input string to validate.
+ * @param contentLengthMin Minimum allowed length.
+ * @param contentLengthMax Maximum allowed length.
+ * @param isPassword True if validating a password, false for login.
+ * @return true if the input is valid.
+ * @throws std::invalid_argument If the input does not meet requirements.
+ */
+bool checkNewDataInputForLimits(const std::string &inputData, std::size_t contentLengthMin,
+                                std::size_t contentLengthMax, bool isPassword);
+
+/**
+ * @brief Validates user input with retry attempts.
+ * @param prompt Message displayed to the user.
+ * @param dataLengthMin Minimum length of the input.
+ * @param dataLengthMax Maximum length of the input.
+ * @param isPassword True if input is a password.
+ * @param dataForValidation Structure for storing/comparing input data.
+ * @param newUserData True if creating a new user.
+ * @param chatSystem Reference to the chat system.
+ * @return Validated input string.
+ * @details Displays a prompt, retrieves user input, validates it, and returns the validated value.
+ */
+std::string inputDataValidation(const std::string &prompt, std::size_t dataLengthMin, std::size_t dataLengthMax,
+                                bool isPassword, UserData dataForValidation, bool newUserData,
+                                const ChatSystem &chatSystem);
+
+/**
+ * @brief Finds a user by login in the chat system.
+ * @param userLogin The login to search for.
+ * @param chatSystem Reference to the chat system.
+ * @return Shared pointer to the found user, or nullptr if not found.
+ */
+std::shared_ptr<User> findUserbyLogin(const std::string &userLogin, const ChatSystem &chatSystem);
+
+/**
+ * @brief Checks if a user with the specified login exists.
+ * @param login The login to check.
+ * @param chatSystem Reference to the chat system.
+ * @return Shared pointer to the user if found, or nullptr if not found.
+ */
+const std::shared_ptr<User> checkLoginExists(const std::string &login, const ChatSystem &chatSystem);
+
+/**
+ * @brief Verifies if the provided password matches the user's password.
+ * @param userData Structure containing login and password.
+ * @param chatSystem Reference to the chat system.
+ * @return True if the password is valid, false otherwise.
+ */
+bool checkPasswordValidForUser(const UserData &userData, const ChatSystem &chatSystem);
+
+/**
+ * @brief Prompts and validates a new user login.
+ * @param userData Structure to store the validated login.
+ * @param chatSystem Reference to the chat system for uniqueness checks.
+ */
+void inputNewLogin(UserData &userData, const ChatSystem &chatSystem);
+
+/**
+ * @brief Prompts and validates a new user password.
+ * @param userData Structure to store the validated password.
+ * @param chatSystem Reference to the chat system.
+ */
+void inputNewPassword(UserData &userData, const ChatSystem &chatSystem);
+
+/**
+ * @brief Prompts and validates a new user display name.
+ * @param userData Structure to store the validated name.
+ * @param chatSystem Reference to the chat system.
+ */
+void inputNewName(UserData &userData, const ChatSystem &chatSystem);
+
+/**
+ * @brief Performs the full registration process for a new user.
+ * @param chatSystem Reference to the chat system.
+ * @details Handles input and validation of login, password, and name.
+ */
+void userRegistration(ChatSystem &chatSystem);
+
+/**
+ * @brief Authenticates a user in the chat system.
+ * @param chatSystem Reference to the chat system.
+ * @return True if login is successful, false if login fails.
+ */
+bool userLoginInsystem(ChatSystem &chatSystem);
+
+
+
+
+// ===== /home/yanbatytskiy/SynologyDrive/CPP/Linux/ChatBot/src/menu/2_0_login_menu.cpp =====
+#include "exception/validation_exception.h"
+#include "system/chat_system.h"
+#include "system/system_function.h"
+#include "menu/2_0_login_menu.h"
+#include "menu/2_1_new_chat_menu.h"
+#include "menu/2_2_chat_list_menu.h"
+#include "menu/2_4_user_profile.h"
+#include <cctype>
+#include <iostream>
+#include <ostream>
+
+/**
+ * @brief Displays the main authorization menu and retrieves user choice.
+ * @return short Value corresponding to the user's choice:
+ * - 1 — User registration
+ * - 2 — Login to chat
+ * - 0 — Exit program
+ * @throws EmptyInputException If input is empty.
+ * @throws IndexOutOfRangeException If input is not 0, 1, or 2.
+ * @details Outputs a text menu to the console, processes user input, and returns the action code.
+ */
+short authMenu() { // вывод главного меню
+  while (true) {
+    std::cout << std::endl << "ChatBot 'Shark' Версия 1.0. @2025 \n \n";
+
+    std::cout << "Выберите пункт меню: " << ::std::endl
+              << "1. Регистрация пользователя " << std::endl
+              << "2. Войти в ЧатБот" << std::endl
+              << "0. Завершить программу" << std::endl;
+
+    std::string userChoice;
+    int userChoiceNumber;
+
+    while (true) {
+      std::getline(std::cin, userChoice);
+      try {
+        if (userChoice.empty())
+          throw EmptyInputException();
+
+        if (userChoice == "0")
+          return 0;
+
+        userChoiceNumber = parseGetlineToInt(userChoice);
+
+        if (userChoiceNumber != 1 && userChoiceNumber != 2)
+          throw IndexOutOfRangeException(userChoice);
+
+        return userChoiceNumber;
+      } catch (const ValidationException &ex) {
+        std::cout << " ! " << ex.what() << " Попробуйте еще раз." << std::endl;
+        continue;
+      }
+    } // first while
+  } // second while
+}
+
+/**
+ * @brief Handles user choices in the menu after authorization.
+ * @param chatSystem Reference to the chat system.
+ * @throws EmptyInputException If input is empty.
+ * @throws IndexOutOfRangeException If input is not 0, 1, 2, 3, or 4.
+ * @details Displays the post-login menu, processes user input, and directs to appropriate actions (new chat, chat list, or user profile).
+ */
+void loginMenuChoice(ChatSystem &chatSystem) { // вывод главного меню
+  int userChoiceNumber;
+  std::string userChoice;
+
+  while (true) {
+    std::cout << std::endl;
+    std::cout << "Добрый день, пользователь " << chatSystem.getActiveUser()->getUserName() << std::endl;
+    std::cout << std::endl;
+    std::cout << "Выберите пункт меню: " << std::endl;
+    std::cout << "1 - Создать новый чат" << std::endl;
+    std::cout << "2 - Показать список чатов" << std::endl;
+    std::cout << "3 - Показать список папок - Under constraction." << std::endl;
+    std::cout << "4 - Показать Профиль пользователя" << std::endl;
+    std::cout << "0 - Выйти в предыдущее меню" << std::endl;
+
+    bool exit2 = true;
+    while (exit2) {
+      std::getline(std::cin, userChoice);
+      try {
+        if (userChoice.empty())
+          throw EmptyInputException();
+
+        if (userChoice == "0")
+          return;
+
+        userChoiceNumber = parseGetlineToInt(userChoice);
+
+        if (userChoiceNumber < 0 || userChoiceNumber > 4)
+          throw IndexOutOfRangeException(userChoice);
+
+        switch (userChoiceNumber) {
+        case 1:
+          LoginMenu_1NewChat(chatSystem);
+          exit2 = false;
+          continue;
+        //   break; // case 1 MainMenu
+        case 2:
+          loginMenu_2ChatList(chatSystem);
+          exit2 = false;
+          continue;
+          break; // case 2 MainMenu
+        case 3:
+          std::cout << "Показать список папок - Under constraction." << std::endl;
+          break; // case 3 MainMenu
+        case 4:
+          loginMenu_4UserProfile(chatSystem);
+          exit2 = false;
+          continue;
+          break; // case 4 MainMenu
+        default:
+          break; // default MainMenu
+        } // switch
+      } // try
+      catch (const ValidationException &ex) {
+        std::cout << " ! " << ex.what() << " Попробуйте еще раз." << std::endl;
+        continue;
+      }
+    } // second
+  }
+}
+
+
+
+
+// ===== /home/yanbatytskiy/SynologyDrive/CPP/Linux/ChatBot/src/menu/2_0_login_menu.h =====
+#pragma once
+#include "system/chat_system.h"
+
+/**
+ * @brief Displays the main authorization menu.
+ * @return The user's menu selection as a short integer.
+ */
+short authMenu();
+
+/**
+ * @brief Handles the login menu flow and user input.
+ * @param chatSystem Reference to the chat system.
+ */
+void loginMenuChoice(ChatSystem &chatSystem);
+
+// /**
+//  * @brief Opens the interface for the specified chat from the chat list.
+//  * @param chatSystem Reference to the chat system.
+//  * @param chat Shared pointer to the chat to open.
+//  * @param Index Index of the chat in the list.
+//  */
+// void menuListOpenChat1(ChatSystem &chatSystem, const std::shared_ptr<Chat> &chat, std::size_t Index);
+
+// /**
+//  * @brief Opens the interface for searching and selecting a chat.
+//  * @param chatSystem Reference to the chat system.
+//  */
+// void menuListFindChat2(ChatSystem &chatSystem);
+
+
+
+// ===== /home/yanbatytskiy/SynologyDrive/CPP/Linux/ChatBot/src/menu/2_1_new_chat_menu.cpp =====
+#include "menu/2_1_new_chat_menu.h"
+#include "chat/chat.h"
+#include "exception/login_exception.h"
+#include "exception/validation_exception.h"
+#include "system/system_function.h"
+#include "user/user_chat_list.h"
+#include <algorithm>
+#include <cctype>
+#include <iostream>
+#include <memory>
+#include <string>
+#include <vector>
+
+/**
+ * @brief Creates a new chat by selecting participants.
+ * @param chatSystem Reference to the chat system.
+ * @param chat Shared pointer to the chat being created.
+ * @param activeUserIndex Index of the active user.
+ * @param target Target type for the message (e.g., individual, several, or all).
+ * @throws EmptyInputException If input is empty.
+ * @throws InvalidCharacterException If input contains invalid characters.
+ * @throws UserNotFoundException If no users are found for the search query.
+ * @throws IndexOutOfRangeException If selected index is out of range.
+ * @details Handles user selection for adding participants to a new chat based on the target type.
+ */
+void LoginMenu_1NewChatMakeParticipants(ChatSystem &chatSystem, std::shared_ptr<Chat> &chat,
+                                        std::size_t activeUserIndex,
+                                        MessageTarget target) { // создение нового сообщения путем выбора пользователей
+
+  std::string inputData;
+  std::string userChoice;
+  int userChoiceNumber;
+
+  // добавляем отправителя в вектор участников
+  chat->addParticipant(chatSystem.getActiveUser());
+
+  switch (target) {
+
+  case MessageTarget::One: {
+    // сообщение только одному пользователю
+
+    bool exit = true;
+    while (exit) {
+      try {
+        // получаем список получателей через ввод списка
+        std::cout << "Введите часть имени или логина для поиска большими или маленькими буквами или 0 для отмены: "
+                  << std::endl;
+
+        getline(std::cin, inputData);
+
+        if (inputData.empty())
+          throw EmptyInputException();
+
+        if (inputData == "0") {
+          exit = false;
+          continue;
+        }
+
+        // проверяем на наличие недопустимых символов
+        for (const auto &exactChar : inputData)
+          if (!std::isdigit(exactChar) && !std::isalpha(exactChar))
+            throw InvalidCharacterException(exactChar);
+
+        // найти пользователей
+        std::vector<std::shared_ptr<User>> users;
+        chatSystem.findUser(users, inputData);
+
+        if (users.size() == 0)
+          throw UserNotFoundException();
+
+        // выводим найденных пользователей на экран
+        int index = 1;
+        std::cout << "Вот, кого мы нашли (Имя : Логин), выберите одного:" << std::endl;
+        for (const auto &user : users) {
+          std::cout << index << ". " << user->getUserName() << " : " << user->getLogin() << std::endl;
+          ++index;
+        }
+
+        // выбрать нужного из списка
+        bool exit2 = true;
+        while (exit2) {
+          try {
+            // выбираем пользователя
+            std::cout << "Введите номер пользователя 0 для отмены: " << std::endl;
+
+            getline(std::cin, inputData);
+
+            if (inputData.empty())
+              throw EmptyInputException();
+
+            if (inputData == "0") {
+              exit = false;
+              break;
+            }
+
+            userChoiceNumber = parseGetlineToInt(inputData);
+
+            if (userChoiceNumber > index)
+              throw IndexOutOfRangeException(inputData);
+
+            break;
+          } // try
+          catch (const ValidationException &ex) {
+            std::cout << " ! " << ex.what() << " Попробуйте еще раз." << std::endl;
+            continue;
+          }
+          //   exit2 = false;
+        } // second while exit2
+
+        // здесь мы проверяем, ято если пользователь ввел ноль, то поиск нужно заново начать
+        if (exit == false) {
+          exit = true;
+          continue;
+        }
+
+        // заполнить вектор участников
+        chat->addParticipant(users[userChoiceNumber - 1]);
+
+        // проверки
+        std::cout << "Участники чата: " << std::endl;
+        for (const auto &user : chat->getParticipants()) {
+          auto user_ptr = user._user.lock();
+          std::cout << user_ptr->getLogin() << " ака " << user_ptr->getUserName() << std::endl;
+        }
+
+      } // try
+      catch (const ValidationException &ex) {
+        std::cout << " ! " << ex.what() << " Попробуйте еще раз." << std::endl;
+        continue;
+      }
+      exit = false;
+    } // first while exit
+
+    break;
+  } // case One
+
+  case MessageTarget::Several: {
+
+    // сообщение только некоторым пользователям
+
+    bool exit = true;
+    while (exit) {
+      try {
+        // получаем список получателей через ввод списка
+        std::cout << "Введите номера пользователей через запятую или 0 для отмены: " << std::endl;
+
+        getline(std::cin, inputData);
+
+        if (inputData.empty())
+          throw EmptyInputException();
+
+        if (inputData == "0") {
+          exit = false;
+          continue;
+        }
+
+        // проверяем на наличие недопустимых символов
+        for (const auto &exactChar : inputData)
+          if (!std::isdigit(exactChar) && static_cast<unsigned char>(exactChar) != ',')
+            throw InvalidCharacterException(exactChar);
+
+        // проверки
+        // std::cout << activeUserIndex << std::endl;
+
+        // добавляем в конец запятую
+        inputData.push_back(',');
+        std::cout << std::endl << inputData << std::endl;
+
+        // создаем вектор для хранения индексов получателей в массиве пользователей
+        std::vector<std::size_t> recipientIndex;
+
+        // заполняем вектор значениями
+        std::string str_temp;
+        std::size_t index_temp;
+
+        do {
+          auto pos = inputData.find_first_of(',');
+
+          str_temp = inputData.substr(0, pos);
+          //   std::cout << str_temp << " : ";
+
+          if (!str_temp.empty()) {
+            index_temp = parseGetlineToSizeT(str_temp);
+            // std::cout << index_temp << std::endl;
+
+            // проверяем на дубли
+            if (index_temp <= activeUserIndex) {
+              if (std::find(recipientIndex.begin(), recipientIndex.end(), index_temp - 1) == recipientIndex.end()) {
+                recipientIndex.push_back(index_temp - 1);
+                // std::cout << " : " << index_temp - 1 << std::endl;
+              }
+            } else {
+              if (std::find(recipientIndex.begin(), recipientIndex.end(), index_temp) == recipientIndex.end()) {
+                recipientIndex.push_back(index_temp);
+                std::cout << " : " << recipientIndex.back() << std::endl;
+              };
+            };
+          };
+
+          inputData.erase(0, pos + 1);
+        } while (!inputData.empty());
+
+        // проверки временная
+        // std::cout << std::endl;
+        // for (const auto &rep : recipientIndex)
+        //   std::cout << rep << ", ";
+
+        // проверки временная
+        // std::cout << std::endl;
+        // for (std::size_t i = 1; i <= recipientIndex.size(); ++i) {
+        //   std::cout << chatSystem.getUsers()[recipientIndex[i - 1]]->getLogin() << ", ";
+        // }
+
+        // заполняем вектор участников
+        for (const auto &recipient : recipientIndex) {
+          chat->addParticipant(chatSystem.getUsers()[recipient]);
+        }
+
+        // проверки
+        // std::cout << "Участники чата: " << std::endl;
+        // for (const auto &user : chat->getParticipants()) {
+        //   auto user_ptr = user._user.lock();
+        //   std::cout << user_ptr->getLogin() << " ака " << user_ptr->getUserName() << std::endl;
+        // }
+      } // try
+      catch (const ValidationException &ex) {
+        std::cout << " ! " << ex.what() << " Попробуйте еще раз." << std::endl;
+        continue;
+      }
+      exit = false;
+    } // while
+    break;
+  } // case Severall
+  case MessageTarget::All: {
+    // заполняем вектор участников чата
+    for (const auto &user : chatSystem.getUsers())
+      if (user != chatSystem.getActiveUser()) {
+        chat->addParticipant(user);
+      }
+
+    return;
+    break; // case All
+  }
+
+  } // switch
+}
+
+/**
+ * @brief Creates and sends a message to a new chat.
+ * @param chatSystem Reference to the chat system.
+ * @param chat Shared pointer to the new chat.
+ * @param activeUserIndex Index of the active user.
+ * @param target Target type for the message (e.g., individual, several, or all).
+ * @throws BadWeakException If a weak_ptr cannot be locked.
+ * @throws ValidationException If message input fails validation.
+ * @details Manages participant selection, message input, and chat integration into the system.
+ */
+void CreateAndSendNewChat(ChatSystem &chatSystem, std::shared_ptr<Chat> &chat, std::size_t activeUserIndex,
+                          MessageTarget target) {
+
+  LoginMenu_1NewChatMakeParticipants(chatSystem, chat, activeUserIndex, target);
+
+  // создаем сообщение
+  std::cout << std::endl << "Вот твой чат. В нем всего 0 сообщения(ий). " << std::endl;
+
+  bool exitCase2 = true;
+  std::size_t unReadCount = 0;
+
+  while (exitCase2) {
+    try {
+      if (inputNewMessage(chatSystem, chat) == false) { // пользователь решмил не вводить сообщение
+        exitCase2 = false;
+      } else { // пользователь ввел сообщение
+        if (unReadCount == 0) {
+          // добавили в головную систему чтобы не потерять чат при выходе из метода
+          chatSystem.addChat(chat);
+
+          // добавили каждому участнику чат в чат-лист
+          for (const auto &user : chat->getParticipants()) {
+            auto user_ptr = user._user.lock();
+            if (user_ptr) {
+              user_ptr->getUserChatList()->addChat(chat);
+            } else
+              throw BadWeakException("LoginMenu_1NewChat");
+          }
+        }
+        ++unReadCount;
+
+        // проверки
+        // chat->printChat(chatSystem.getActiveUser());
+        // std::cout << std::endl;
+      }; // else
+    } // try
+    catch (const ValidationException &ex) {
+      std::cout << " ! " << ex.what() << std::endl;
+    }
+  } // while case 2
+}
+
+/**
+ * @brief Initiates the creation of a new chat.
+ * @param chatSystem Reference to the chat system.
+ * @throws EmptyInputException If input is empty.
+ * @throws IndexOutOfRangeException If input is not 0, 1, 2, or 3.
+ * @details Provides a menu for selecting the type of new chat (one user, several users, or all users).
+ */
+void LoginMenu_1NewChat(ChatSystem &chatSystem) { // создание нового сообщения
+
+  std::string userChoice;
+  size_t userChoiceNumber;
+  bool exit = true;
+  // создали новый чат
+  auto chat = std::make_shared<Chat>();
+
+  while (exit) {
+    std::cout << "Хотите: " << std::endl
+              << "1. Найти пользователя и отправить ему сообщение" << std::endl
+              << "2. Вывести список пользователей и отправить нескольким пользователям" << std::endl
+              << "3. Отправить сообщение всем пользователям" << std::endl
+              << "0. Для выхода в предыдущее меню" << std::endl;
+
+    std::getline(std::cin, userChoice);
+
+    try {
+
+      if (userChoice.empty())
+        throw EmptyInputException();
+
+      if (userChoice == "0")
+        return;
+
+      userChoiceNumber = parseGetlineToInt(userChoice);
+
+      if (userChoiceNumber != 1 && userChoiceNumber != 2 && userChoiceNumber != 3)
+        throw IndexOutOfRangeException(userChoice);
+
+      switch (userChoiceNumber) {
+
+      case 1: { // 1. Найти пользователя и отправить ему сообщение
+        CreateAndSendNewChat(chatSystem, chat, 0, MessageTarget::One);
+
+        exit = false; // выход в верхнее меню так как новый чат уже не новый
+        break;        // case 1
+      }
+      case 2: { // 2. Вывести список пользователей и отправить нескольким пользователям
+
+        // запомнили номер активного пользователя
+        auto activeUserIndex = chatSystem.showUserList(false);
+
+        CreateAndSendNewChat(chatSystem, chat, activeUserIndex, MessageTarget::Several);
+
+        exit = false; // выход в верхнее меню так как новый чат уже не новый
+        break;        // case 2
+      }
+      case 3: { // 3. Отправить сообщение всем пользователям
+
+        CreateAndSendNewChat(chatSystem, chat, 0, MessageTarget::All);
+        exit = false; // выход в верхнее меню так как новый чат уже не новый
+        break;        // case 3
+      }
+      default:
+        break; // default
+      } // switch
+    } // try
+    catch (const ValidationException &ex) {
+      std::cout << " ! " << ex.what() << " Попробуйте еще раз." << std::endl;
+      continue;
+    }
+  } // while
+}
+
+
+
+// ===== /home/yanbatytskiy/SynologyDrive/CPP/Linux/ChatBot/src/menu/2_1_new_chat_menu.h =====
+#pragma once
+#include "system/chat_system.h"
+#include "system/system_function.h"
+
+/**
+ * @brief Creates a new chat by selecting participants.
+ * @param chatSystem Reference to the chat system.
+ * @param chat Shared pointer to the chat being created.
+ * @param activeUserIndex Index of the active user.
+ * @param target Target type for the message (e.g., individual or group).
+ * @details Facilitates the selection of users to add as participants to a new chat.
+ */
+void LoginMenu_1NewChatMakeParticipants(ChatSystem &chatSystem, std::shared_ptr<Chat> &chat,
+                                        std::size_t activeUserIndex,
+                                        MessageTarget target); // создение нового сообщения путем выбора пользователей
+
+/**
+ * @brief Creates and sends a message to a new chat.
+ * @param chatSystem Reference to the chat system.
+ * @param activeUserIndex Index of the active user.
+ * @param sendToAll True if the message should be sent to all users.
+ * @details Handles the creation of a new chat and sending a message, supporting different sending modes.
+ */
+void CreateAndSendNewChat(ChatSystem &chatSystem, std::size_t activeUserIndex,
+                          bool sendToAll); // общая функция для отправки сообщения в новый чат тремя способами
+
+/**
+ * @brief Initiates the creation of a new chat.
+ * @param chatSystem Reference to the chat system.
+ * @details Provides the interface for starting the process of creating a new chat.
+ */
+void LoginMenu_1NewChat(ChatSystem &chatSystem); // создание нового сообщения
+
+
+
+// ===== /home/yanbatytskiy/SynologyDrive/CPP/Linux/ChatBot/src/menu/2_2_chat_list_menu.cpp =====
+#include "exception/validation_exception.h"
+#include "system/chat_system.h"
+#include "system/system_function.h"
+#include "user/user_chat_list.h"
+#include <iostream>
+
+/**
+ * @brief Manages interactions with a specific chat.
+ * @param chatSystem Reference to the chat system.
+ * @param chat Shared pointer to the chat to be edited.
+ * @throws EmptyInputException If input is empty.
+ * @throws IndexOutOfRangeException If input is not 0, 1, 2, 3, 4, or 5.
+ * @details Displays chat details, participants, and messages, and provides options to send messages or perform other
+ * actions (some under construction).
+ */
+void loginMenu_2EditChat(ChatSystem &chatSystem, const std::shared_ptr<Chat> &chat /*, std::size_t unReadCountIndex*/) {
+
+  std::string userChoice;
+  size_t userChoiceNumber;
+  bool exit = true;
+
+  while (exit) {
+    auto messageCount = chat->getMessages().size();
+
+    auto unReadCount = chat->getLastReadMessageIndex(chatSystem.getActiveUser()); // получаем количество неппрочитанных
+
+    std::cout << std::endl << "Вот твой чат. В нем всего " << messageCount << " сообщения(ий). ";
+    std::cout << "\033[32m"; // red
+    std::cout << "Из них непрочитанных - " << messageCount - unReadCount << std::endl;
+    std::cout << "\033[0m";
+
+    // выводим список участников чата кроме активного юзера
+    std::cout << std::endl << "Участники чата Имя/Логин: " << std::endl;
+    // перебираем участников чата
+    for (const auto &participant : chat->getParticipants()) {
+      auto user_ptr = participant._user.lock();
+      if (user_ptr) {
+        if (user_ptr != chatSystem.getActiveUser()) {
+          std::cout << user_ptr->getUserName() << "/" << user_ptr->getUserName() << "; ";
+        };
+      } else {
+        std::cout << "удал. пользоыватель";
+      }
+    }
+
+    std::cout << std::endl;
+
+    chat->printChat(chatSystem.getActiveUser());
+    chat->updateLastReadMessageIndex(chatSystem.getActiveUser(), messageCount);
+    std::cout << std::endl;
+
+    std::cout << std::endl;
+    std::cout << "Что будем делать? " << std::endl;
+    std::cout << "1 - написать сообщение" << std::endl;
+    std::cout << "2 - удалить последние отправленные сообщения - Under constraction" << std::endl;
+    std::cout << "3 - очистить чат - Under constraction" << std::endl;
+    std::cout << "4 - выйти из чата/удалить чат у пользователя - Under constraction" << std::endl;
+    std::cout << "5 - поиск внутри чата - Under constraction" << std::endl;
+    std::cout << "0 - Выйти в предыдущее меню" << std::endl;
+
+    bool exit2 = true;
+    while (exit2) {
+      std::getline(std::cin, userChoice);
+
+      try {
+
+        if (userChoice.empty())
+          throw EmptyInputException();
+
+        if (userChoice == "0")
+          return;
+
+        userChoiceNumber = parseGetlineToInt(userChoice);
+
+        if (userChoiceNumber < 1 || userChoiceNumber > 5)
+          throw IndexOutOfRangeException(userChoice);
+
+        switch (userChoiceNumber) {
+        case 1:
+          inputNewMessage(chatSystem, chat);
+          chat->updateLastReadMessageIndex(chatSystem.getActiveUser(), messageCount + 1);
+          std::cout << std::endl;
+
+          chat->printChat(chatSystem.getActiveUser());
+          std::cout << std::endl;
+
+          exit2 = false;
+          break; // case 1
+        case 2:
+          std::cout << "2 - удалить последние отправленные сообщения - Under constraction" << std::endl;
+          break; // case 2
+        case 3:
+          std::cout << "3 - очистить чат - Under constraction" << std::endl;
+          break; // case 3
+        case 4:
+          std::cout << "4 - выйти из чата/удалить чат у пользователя - Under constraction" << std::endl;
+          break; // case 4
+        case 5:
+          std::cout << "5 - поиск внутри чата - Under constraction" << std::endl;
+          break; // case 5
+        default:
+          break; // default
+        } // switch
+      } catch (const ValidationException &ex) {
+        std::cout << " ! " << ex.what() << " Попробуйте еще раз." << std::endl;
+        continue;
+      }
+
+    } // second while
+  } // first while
+}
+
+/**
+ * @brief Displays the list of chats for the active user.
+ * @param chatSystem Reference to the chat system.
+ * @throws EmptyInputException If input is empty.
+ * @throws IndexOutOfRangeException If input is not a valid chat index or 0.
+ * @throws ChatNotFoundException If the selected chat cannot be accessed.
+ * @details Shows the user's chat list and allows selection of a chat to edit or view.
+ */
+void loginMenu_2ChatList(ChatSystem &chatSystem) { // показать список чатов
+
+  auto chatCount = chatSystem.getActiveUser()
+                       ->getUserChatList()
+                       ->getChatFromList()
+                       .size(); // количество чатов у пользователя
+
+  std::cout << std::endl;
+
+  chatSystem.getActiveUser()->printChatList(chatSystem.getActiveUser()); // определяем текущего пользователя
+  std::cout << std::endl;
+
+  if (chatSystem.getActiveUser()->getUserChatList()->getChatFromList().empty()) {
+    std::cout << "У пользователя пока нет чатов" << std::endl;
+    return;
+  }
+
+  std::string userChoice;
+  int userChoiceNumber;
+  bool exit2 = true;
+
+  while (true) {
+
+    std::cout << "Выберите пункт меню: " << std::endl;
+    std::cout << "От 1 до " << chatCount << " - Чтобы открыть чат введите его номер (всего " << chatCount
+              << " чата(ов)): " << std::endl;
+    std::cout << "f - Поиск по чатам. Under constraction." << std::endl;
+    std::cout << "0 - Выйти в предыдущее меню" << std::endl;
+
+    while (exit2) {
+      std::getline(std::cin, userChoice);
+
+      try {
+
+        if (userChoice.empty())
+          throw EmptyInputException();
+
+        if (userChoice == "0")
+          return;
+
+        if (userChoice == "f") {
+          std::cout << "f - Поиск по чатам. Under constraction." << std::endl;
+          exit2 = false;
+          continue;
+        }
+
+        userChoiceNumber = parseGetlineToInt(userChoice);
+
+        if (userChoiceNumber < 0 || userChoiceNumber > static_cast<int>(chatCount))
+          throw IndexOutOfRangeException(userChoice);
+
+        // здесь мы достаем из вектора количество непрочитанных сообщениотображения на экране
+        auto chatList = chatSystem.getActiveUser()->getUserChatList()->getChatFromList(); // weak указатель на вектор
+
+        auto activeChat_weak = chatList[userChoiceNumber - 1];
+        auto activeChat_ptr = activeChat_weak.lock();
+
+        if (!activeChat_ptr)
+          throw ChatNotFoundException();
+        else
+          loginMenu_2EditChat(chatSystem, activeChat_ptr);
+        return;
+      } catch (const ValidationException &ex) {
+        std::cout << " ! " << ex.what() << " Попробуйте еще раз." << std::endl;
+        continue;
+      };
+    } // second while
+
+  } // первый while
+}
+
+
+
+// ===== /home/yanbatytskiy/SynologyDrive/CPP/Linux/ChatBot/src/menu/2_2_chat_list_menu.h =====
+#pragma once
+#include "system/chat_system.h"
+
+/**
+ * @brief Displays the list of chats for the active user.
+ * @param chatSystem Reference to the chat system.
+ * @details Shows available chats and allows the user to interact with them.
+ */
+void loginMenu_2ChatList(ChatSystem &chatSystem);
+
+/**
+ * @brief Edits or manages a specific chat.
+ * @param chatSystem Reference to the chat system.
+ * @param chat Shared pointer to the chat to be edited.
+ * @details Provides options to modify or interact with the specified chat.
+ */
+void loginMenu_2EditChat(ChatSystem &chatSystem, const std::shared_ptr<Chat> &chat /*, std::size_t unReadCountIndex*/);
+
+
+// ===== /home/yanbatytskiy/SynologyDrive/CPP/Linux/ChatBot/src/menu/2_4_user_profile.cpp =====
+#include "2_4_user_profile.h"
+#include "exception/validation_exception.h"
+#include "menu/1_registration.h"
+#include "system/chat_system.h"
+#include "system/system_function.h"
+#include <iostream>
+
+/**
+ * @brief Changes the username of the active user.
+ * @param chatSystem Reference to the chat system.
+ * @details Prompts for a new username, validates it, and updates the user's name.
+ */
+void userNameChange(ChatSystem &chatSystem) { // смена имени пользователя
+
+  UserData userData;
+
+  inputNewName(userData, chatSystem);
+  if (userData._name.empty())
+    return;
+
+  chatSystem.getActiveUser()->setUserName(userData._name);
+
+  std::cout << "Имя изменено. Логин  = " << chatSystem.getActiveUser()->getLogin()
+            << " и Имя = " << chatSystem.getActiveUser()->getUserName() << std::endl;
+}
+
+/**
+ * @brief Changes the password of the active user.
+ * @param chatSystem Reference to the chat system.
+ * @details Prompts for a new password, validates it, and updates the user's password.
+ */
+void userPasswordChange(ChatSystem &chatSystem) { // смена пароля пользователя
+
+  UserData userData;
+
+  inputNewPassword(userData, chatSystem);
+  if (userData._password.empty())
+    return;
+
+  chatSystem.getActiveUser()->setPassword(userData._password);
+
+  std::cout << "Пароль изменен. Логин = " << chatSystem.getActiveUser()->getLogin()
+            << " и Имя = " << chatSystem.getActiveUser()->getUserName()
+            << " и Пароль = " << chatSystem.getActiveUser()->getPassword() << std::endl;
+}
+
+/**
+ * @brief Deletes all chats associated with the user (under construction).
+ * @param chatSystem Reference to the chat system.
+ * @details Placeholder for functionality to remove all user chats, with confirmation prompt (commented out).
+ */
+void userChatDeleteAll(ChatSystem &chatSystem) {
+
+  //   std::cout << "Вы уверены, что надо удалить у Вас все чаты? (1 - да; 0 - нет)";
+
+  //   std::string userChoice;
+
+  //   while (true) {
+  //     std::getline(std::cin, userChoice);
+  //     try {
+
+  //       if (userChoice.empty())
+  //         throw EmptyInputException();
+
+  //       if (userChoice == "0")
+  //         return;
+
+  //       if (userChoice != "1")
+  //         throw IndexOutOfRangeException(userChoice);
+
+  //       // удалить чат из пользователя
+
+  //       // проверить - если это был последний активнный пользователь чата - удалить сам
+
+  //     } // try
+  //     catch (const ValidationException &ex) {
+  //       std::cout << " ! " << ex.what() << " Попробуйте еще раз." << std::endl;
+  //     } // catch
+  //   } // first while
+}
+
+/**
+ * @brief Displays and manages the user profile menu.
+ * @param chatSystem Reference to the chat system.
+ * @throws EmptyInputException If input is empty.
+ * @throws IndexOutOfRangeException If input is not 0, 1, 2, 3, 4, 5, or 6.
+ * @details Shows profile options and handles user actions like changing name or password; some features are under construction.
+ */
+void loginMenu_4UserProfile(ChatSystem &chatSystem) {
+  int userChoiceNumber;
+  std::string userChoice;
+
+  while (true) {
+    std::cout << std::endl;
+    std::cout << "Добрый день, пользователь " << chatSystem.getActiveUser()->getUserName() << std::endl;
+    std::cout << std::endl;
+    std::cout << "Выберите пункт меню: " << std::endl;
+    std::cout << "1 - Сменить имя пользователя (не логин)" << std::endl;
+    std::cout << "2 - Сменить пароль" << std::endl;
+    std::cout << "3 - Удалить все чаты пользователя - Under constraction." << std::endl;
+    std::cout << "4 - Очистить все чаты пользователя - Under constraction." << std::endl;
+    std::cout << "5 - Удалить Профиль пользователя - Under constraction." << std::endl;
+    std::cout << "6 - Сменить аватарку пользователя - Under constraction." << std::endl;
+    std::cout << "0 - Выйти в предыдущее меню" << std::endl;
+
+    bool exit2 = true;
+    while (exit2) {
+      std::getline(std::cin, userChoice);
+      try {
+
+        if (userChoice.empty())
+          throw EmptyInputException();
+
+        if (userChoice == "0")
+          return;
+
+        userChoiceNumber = parseGetlineToInt(userChoice);
+
+        if (userChoiceNumber < 0 || userChoiceNumber > 4)
+          throw IndexOutOfRangeException(userChoice);
+
+        switch (userChoiceNumber) {
+        case 1:
+          userNameChange(chatSystem); // 2 - Сменить пароль
+          exit2 = false;
+          break; // case 1 MainMenu
+        case 2:
+          userPasswordChange(chatSystem);
+          exit2 = false;
+          break; // case 2 MainMenu
+        case 3:  // 3 - Удалить все чаты пользователя - Under constraction.
+                 //   userChatDeleteAll(chatSystem);
+                 //   exit2 = false;
+          std::cout << "3 - Удалить все чаты пользователя - Under constraction." << std::endl;
+          break; // case 3 MainMenu
+        case 4:
+          std::cout << "4 - Очистить все чаты пользователя - Under constraction." << std::endl;
+          break; // case 4 MainMenu
+        case 5:
+          std::cout << "5 - Удалить Профиль пользователя - Under constraction." << std::endl;
+          break; // case 5 MainMenu
+        case 6:
+          std::cout << "6 - Сменить аватарку пользователя - Under constraction." << std::endl;
+          break; // case 6 MainMenu
+        default:
+          break; // default MainMenu
+        } // switch
+
+      } // try
+      catch (const ValidationException &ex) {
+        std::cout << " ! " << ex.what() << " Попробуйте еще раз." << std::endl;
+        continue;
+      }
+    } // second while
+  }
+}
+
+
+
+
+// ===== /home/yanbatytskiy/SynologyDrive/CPP/Linux/ChatBot/src/menu/2_4_user_profile.h =====
+#pragma once
+
+#include "system/chat_system.h"
+
+/**
+ * @brief Changes the username of the active user.
+ * @param chatSystem Reference to the chat system.
+ * @details Prompts the user to input a new username and updates it in the system.
+ */
+void userNameChange(ChatSystem &chatSystem); // смена имени пользователя
+
+/**
+ * @brief Changes the password of the active user.
+ * @param chatSystem Reference to the chat system.
+ * @details Prompts the user to input a new password and updates it in the system.
+ */
+void userPasswordChange(ChatSystem &chatSystem); // смена пароля пользователя
+
+/**
+ * @brief Displays and manages the user profile menu.
+ * @param chatSystem Reference to the chat system.
+ * @details Shows the user's profile information and provides options to modify it.
+ */
+void loginMenu_4UserProfile(ChatSystem &chatSystem); // Профиль пользователя
+
+
+// ===== /home/yanbatytskiy/SynologyDrive/CPP/Linux/ChatBot/src/message/message_content.h =====
+#pragma once
+
+/**
+ * @brief Interface for message content types.
+ */
+class IMessageContent { // interface for template MessageContent
+public:
+  /**
+   * @brief Default virtual destructor.
+   */
+  virtual ~IMessageContent() = default;
+};
+
+/**
+ * @brief Template class for message content of a specific type.
+ * @tparam T The type of content (e.g., TextContent, FileContent, ImageContent).
+ */
+template <typename T> class MessageContent : public IMessageContent {
+private:
+  T _content; // will take type according to the used struct of message content
+
+public:
+  /**
+   * @brief Constructor for MessageContent.
+   * @param content The content of type T to initialize the message.
+   */
+  explicit MessageContent(const T &content) : _content(content) {}; // constructor
+
+  /**
+   * @brief Gets the message content.
+   * @return Reference to the content of type T.
+   */
+  T &getMessageContent() { return _content; };
+
+  /**
+   * @brief Gets the message content (const version).
+   * @return Const reference to the content of type T.
+   */
+  const T &getMessageContent() const { return _content; };
+
+  /**
+   * @brief Sets the message content (to be implemented).
+   * @param content The new content of type T.
+   * @details Placeholder for future message editing functionality.
+   */
+  void setMessageContent(const T &content) {}; // for edit of message, will be realized further
+};
+
+
+
+
+// ===== /home/yanbatytskiy/SynologyDrive/CPP/Linux/ChatBot/src/message/message_content_struct.h =====
+#pragma once
+#include "user/user.h"
+#include <memory>
+#include <string>
+#include <vector>
+
+/**
+ * @brief Structure to hold initial data for a chat message.
+ */
+struct InitDataArray {
+  std::string _messageText;                       ///< Text content of the message.
+  std::string _timeStamp;                         ///< Timestamp of the message.
+  std::shared_ptr<User> _sender;                  ///< Sender of the message.
+  std::vector<std::shared_ptr<User>> _recipients; ///< List of message recipients.
+
+  /**
+   * @brief Constructor for InitDataArray.
+   * @param messageText Text content of the message.
+   * @param timeStamp Timestamp of the message.
+   * @param sender Shared pointer to the sender user.
+   * @param _recipients Vector of shared pointers to recipient users.
+   */
+  InitDataArray(std::string messageText, std::string timeStamp, std::shared_ptr<User> sender,
+                std::vector<std::shared_ptr<User>> _recipients);
+
+  /**
+   * @brief Default destructor.
+   */
+  virtual ~InitDataArray() = default;
+};
+
+/**
+ * @brief Structure for text content in a message.
+ */
+struct TextContent {
+  std::string _text; ///< Text content.
+
+  /**
+   * @brief Constructor for TextContent.
+   * @param text The text content.
+   */
+  TextContent(const std::string &text) : _text(text) {};
+
+  /**
+   * @brief Default destructor.
+   */
+  ~TextContent() = default;
+};
+
+/**
+ * @brief Structure for file content in a message (to be implemented).
+ */
+struct FileContent { // will be realized further
+  std::string _fileName; ///< Name of the file.
+
+  /**
+   * @brief Constructor for FileContent.
+   * @param fileName Name of the file.
+   */
+  FileContent(const std::string &fileName) : _fileName(fileName) {};
+
+  /**
+   * @brief Default destructor.
+   */
+  ~FileContent() = default;
+};
+
+/**
+ * @brief Structure for image content in a message (to be implemented).
+ */
+struct ImageContent { // will be realized further
+  std::string _image; ///< Image identifier or path.
+
+  /**
+   * @brief Constructor for ImageContent.
+   * @param image Image identifier or path.
+   */
+  ImageContent(const std::string &image) : _image(image) {};
+
+  /**
+   * @brief Default destructor.
+   */
+  ~ImageContent() = default;
+};
+
+
+
+
+// ===== /home/yanbatytskiy/SynologyDrive/CPP/Linux/ChatBot/src/message/message.cpp =====
+#include "message/message.h"
+#include "message/message_content.h"
+#include "message/message_content_struct.h"
+#include <iostream>
+#include <memory>
+
+/**
+ * @brief Constructor for Message.
+ * @param content Vector of shared pointers to message content.
+ * @param sender Weak pointer to the sender user.
+ * @param timeStamp Timestamp of the message.
+ */
+Message::Message(const std::vector<std::shared_ptr<IMessageContent>> &content, const std::weak_ptr<User> &sender,
+                 const std::string &timeStamp)
+    : _content(content), _sender(sender), _time_stamp(timeStamp) {}
+
+/**
+ * @brief Gets the content of the message.
+ * @return Const reference to the vector of message content.
+ */
+const std::vector<std::shared_ptr<IMessageContent>> &Message::getContent() const { return _content; }
+
+/**
+ * @brief Gets the sender of the message.
+ * @return Weak pointer to the sender user.
+ */
+std::weak_ptr<User> Message::getSender() const { return _sender; }
+
+/**
+ * @brief Gets the timestamp of the message.
+ * @return Const reference to the timestamp string.
+ */
+const std::string &Message::getTimeStamp() const { return _time_stamp; }
+
+/**
+ * @brief Adds content to the message.
+ * @param content Shared pointer to the content to be added.
+ */
+void Message::addContent(const std::shared_ptr<IMessageContent> &content) { _content.push_back(content); }
+
+/**
+ * @brief Prints the message for a specific user.
+ * @param currentUser Shared pointer to the user viewing the message.
+ * @details Displays the message with formatting based on whether it is incoming or outgoing, including sender details
+ * and content.
+ * @note Contains a typo in the parameter name (¤tUser).
+ */
+void Message::printMessage(const std::shared_ptr<User> &currentUser) {
+  auto sender = _sender.lock();
+  if (!sender)
+    return;
+
+  bool messageDirection = (sender == currentUser);
+
+  if (!messageDirection) { // income Message
+
+    std::cout << "\033[32m"; // red
+    auto sender_ptr = _sender.lock();
+    if (sender_ptr) {
+    } else {
+      std::cout << "user уничтожен " << sender_ptr->getLogin() << std::endl;
+    }
+    std::cout << "     -> Входящее от Логин/Имя" << sender_ptr->getLogin() << "/" << sender_ptr->getUserName() << "    "
+              << _time_stamp << std::endl;
+
+    for (const auto &content : _content) {
+      if (auto textContent = std::dynamic_pointer_cast<MessageContent<TextContent>>(content)) {
+        std::cout << textContent->getMessageContent()._text << std::endl;
+      } else if (auto imageContent = std::dynamic_pointer_cast<MessageContent<ImageContent>>(content)) {
+        std::cout << imageContent->getMessageContent()._image << std::endl;
+      }
+    }
+  } else {
+
+    std::cout << "\033[37m"; // white
+    std::cout << "<- Исходящее от тебя: " << currentUser->getUserName() << "    " << _time_stamp << std::endl;
+
+    for (const auto &content : _content) {
+      if (auto textContent = std::dynamic_pointer_cast<MessageContent<TextContent>>(content)) {
+        std::cout << textContent->getMessageContent()._text << std::endl;
+      } else if (auto imageContent = std::dynamic_pointer_cast<MessageContent<ImageContent>>(content)) {
+        std::cout << imageContent->getMessageContent()._image << std::endl;
+      }
+    }
+  }
+
+  std::cout << "\033[0m";
+};
+
+// delete message will be realized further
+
+// edit message will be realized further
+
+
+
+// ===== /home/yanbatytskiy/SynologyDrive/CPP/Linux/ChatBot/src/message/message.h =====
+#pragma once
+#include "message/message_content.h"
+#include "user/user.h"
+#include <memory>
+#include <string>
+#include <vector>
+
+/**
+ * @brief Interface for messages.
+ */
+class IMessage { // interface for messages
+public:
+  /**
+   * @brief Default virtual destructor.
+   */
+  virtual ~IMessage() = default;
+};
+
+/**
+ * @brief Class representing a message with various content types.
+ */
+class Message : public IMessage {
+private:
+  std::vector<std::shared_ptr<IMessageContent>> _content; ///< Vector of message content.
+  std::weak_ptr<User> _sender;                            ///< Sender of the message.
+  std::string _time_stamp;                                ///< Timestamp of the message (to be implemented).
+
+public:
+  /**
+   * @brief Constructor for Message.
+   * @param content Vector of shared pointers to message content.
+   * @param sender Weak pointer to the sender user.
+   * @param timeStamp Timestamp of the message.
+   */
+  Message(const std::vector<std::shared_ptr<IMessageContent>> &content, const std::weak_ptr<User> &sender,
+          const std::string &timeStamp);
+
+  /**
+   * @brief Default destructor.
+   */
+  ~Message() override = default; // destructor
+
+  /**
+   * @brief Gets the content of the message.
+   * @return Const reference to the vector of message content.
+   */
+  const std::vector<std::shared_ptr<IMessageContent>> &getContent() const;
+
+  /**
+   * @brief Gets the sender of the message.
+   * @return Weak pointer to the sender user.
+   */
+  std::weak_ptr<User> getSender() const;
+
+  /**
+   * @brief Gets the timestamp of the message.
+   * @return Const reference to the timestamp string.
+   */
+  const std::string &getTimeStamp() const;
+
+  /**
+   * @brief Adds content to the message.
+   * @param content Shared pointer to the content to be added.
+   */
+  void addContent(const std::shared_ptr<IMessageContent> &content);
+
+  /**
+   * @brief Prints the message for a specific user.
+   * @param currentUser Shared pointer to the user viewing the message.
+   * @note Contains a typo in the parameter name (¤tUser).
+   */
+  void printMessage(const std::shared_ptr<User> &currentUser);
+
+  // add content to the message
+  // delete message will be realized further
+
+  // edit message will be realized further
+};
+
+
+
+// ===== /home/yanbatytskiy/SynologyDrive/CPP/Linux/ChatBot/src/system/chat_system.cpp =====
+#include "system/chat_system.h"
+#include "system/system_function.h"
+#include <iostream>
+
+/**
+ * @brief Default constructor for ChatSystem.
+ */
+ChatSystem::ChatSystem(){};
+
+/**
+ * @brief Gets the list of users.
+ * @return Const reference to the vector of users.
+ */
+const std::vector<std::shared_ptr<User>> &ChatSystem::getUsers() const { return _users; }
+
+/**
+ * @brief Gets the list of chats.
+ * @return Const reference to the vector of chats.
+ */
+const std::vector<std::shared_ptr<Chat>> &ChatSystem::getChats() const { return _chats; }
+
+/**
+ * @brief Gets the active user.
+ * @return Const reference to the active user.
+ */
+const std::shared_ptr<User> &ChatSystem::getActiveUser() const { return _activeUser; }
+
+/**
+ * @brief Sets the active user.
+ * @param user Shared pointer to the user to set as active.
+ */
+void ChatSystem::setActiveUser(const std::shared_ptr<User> user) { _activeUser = user; }
+
+/**
+ * @brief Adds a user to the system.
+ * @param user Shared pointer to the user to add.
+ */
+void ChatSystem::addUser(const std::shared_ptr<User> &user) { _users.push_back(user); }
+
+/**
+ * @brief Adds a chat to the system.
+ * @param chat Shared pointer to the chat to add.
+ */
+void ChatSystem::addChat(const std::shared_ptr<Chat> &chat) { _chats.push_back(chat); }
+
+/**
+ * @brief Removes a user from the system (not implemented).
+ * @param user Shared pointer to the user to remove.
+ */
+void ChatSystem::eraseUser(const std::shared_ptr<User> &user) {}
+
+/**
+ * @brief Removes a chat from the system (not implemented).
+ * @param chat Shared pointer to the chat to remove.
+ */
+void ChatSystem::eraseChat(const std::shared_ptr<Chat> &chat) {}
+
+/**
+ * @brief Displays the list of users.
+ * @param showActiveUser True to include the active user in the list.
+ * @return The index of the active user in the list.
+ * @details Prints user names and logins, excluding the active user if showActiveUser is false.
+ */
+std::size_t ChatSystem::showUserList(const bool showActiveUser) { // вывод на экрын списка пользователей
+  std::cout << "Список пользователей:" << std::endl;
+  size_t index = 1;
+  size_t returnIndex;
+  for (const auto &user : _users) {
+    if (user == _activeUser) {
+      returnIndex = index - 1;
+    }
+    if (!showActiveUser && user != _activeUser) {
+      std::cout << index << ".  Имя - " << user->getUserName() << ", логин - " << user->getLogin() << ";" << std::endl;
+      ++index;
+    }
+  }
+  return returnIndex;
+}
+
+/**
+ * @brief Finds users matching a search string.
+ * @param users Vector to store found users.
+ * @param textToFind Search string to match against user names or logins.
+ * @details Performs case-insensitive search for users, excluding the active user.
+ */
+void ChatSystem::findUser(std::vector<std::shared_ptr<User>> &users,
+                          const std::string &textToFind) { // поиск пользователя
+
+  std::string textToFindLower = TextToLower(textToFind);
+
+  // перебираем всех пользователей в векторе
+  for (const auto &user : _users) {
+
+    std::string LowerLogin = TextToLower(user->getLogin());
+    std::string LowerName = TextToLower(user->getUserName());
+
+    if (user != _activeUser)
+      if (LowerLogin.find(textToFindLower) != std::string::npos || LowerName.find(textToFindLower) != std::string::npos)
+        users.push_back(user);
+  }
+}
+
+
+// ===== /home/yanbatytskiy/SynologyDrive/CPP/Linux/ChatBot/src/system/chat_system.h =====
+#pragma once
+#include "chat/chat.h"
+#include "user/user.h"
+#include <cstddef>
+#include <memory>
+#include <vector>
+
+/**
+ * @brief Manages users, chats, and the active user in the chat system.
+ */
+class ChatSystem {
+private:
+  std::vector<std::shared_ptr<User>> _users;      ///< List of users in the system.
+  std::vector<std::shared_ptr<Chat>> _chats;      ///< List of chats in the system.
+  std::shared_ptr<User> _activeUser;              ///< Current active user.
+
+public:
+  /**
+   * @brief Default constructor for ChatSystem.
+   */
+  ChatSystem();
+
+  /**
+   * @brief Default destructor.
+   */
+  ~ChatSystem() = default;
+
+  /**
+   * @brief Gets the list of users.
+   * @return Const reference to the vector of users.
+   */
+  const std::vector<std::shared_ptr<User>> &getUsers() const;
+
+  /**
+   * @brief Gets the list of chats.
+   * @return Const reference to the vector of chats.
+   */
+  const std::vector<std::shared_ptr<Chat>> &getChats() const;
+
+  /**
+   * @brief Gets the active user.
+   * @return Const reference to the active user.
+   */
+  const std::shared_ptr<User> &getActiveUser() const;
+
+  /**
+   * @brief Sets the active user.
+   * @param user Shared pointer to the user to set as active.
+   */
+  void setActiveUser(const std::shared_ptr<User> user);
+
+  /**
+   * @brief Adds a user to the system.
+   * @param user Shared pointer to the user to add.
+   */
+  void addUser(const std::shared_ptr<User> &user);
+
+  /**
+   * @brief Adds a chat to the system.
+   * @param chat Shared pointer to the chat to add.
+   */
+  void addChat(const std::shared_ptr<Chat> &chat);
+
+  /**
+   * @brief Removes a user from the system.
+   * @param user Shared pointer to the user to remove.
+   */
+  void eraseUser(const std::shared_ptr<User> &user);
+
+  /**
+   * @brief Removes a chat from the system.
+   * @param chat Shared pointer to the chat to remove.
+   */
+  void eraseChat(const std::shared_ptr<Chat> &chat);
+
+  /**
+   * @brief Displays the list of users.
+   * @param showActiveUser True to include the active user in the list.
+   * @return The number of users displayed.
+   */
+  std::size_t showUserList(const bool showActiveUser); // вывод на экрын списка пользователей
+
+  /**
+   * @brief Finds users matching a search string.
+   * @param users Vector to store found users.
+   * @param textToFind Search string to match against user names or logins.
+   */
+  void findUser(std::vector<std::shared_ptr<User>>& users, const std::string& textToFind);           // поиск пользователя
+};
+
+
+
+
+// ===== /home/yanbatytskiy/SynologyDrive/CPP/Linux/ChatBot/src/system/date_time_utils.cpp =====
+#include "date_time_utils.h"
+#include <ctime>
+
+/**
+ * @brief Retrieves the current date and time as a string.
+ * @return String in the format "YYYY-MM-DD, HH:MM:SS".
+ * @details Uses local time to format the current date and time.
+ */
+std::string getCurrentDateTime() { // вернет строку с текущей датой и временем
+
+  time_t mytime = time(NULL);
+  struct tm *now = localtime(&mytime);
+
+  char date_stamp[20];
+  char time_stamp[20];
+
+  std::strftime(date_stamp, sizeof(date_stamp), "%Y-%m-%d", now);
+  std::strftime(time_stamp, sizeof(time_stamp), "%H:%M:%S", now);
+
+  return std::string(date_stamp) + ", " + time_stamp;
+}
+
+
+
+
+// ===== /home/yanbatytskiy/SynologyDrive/CPP/Linux/ChatBot/src/system/date_time_utils.h =====
+#pragma once
+#include "string"
+
+/**
+ * @brief Retrieves the current date and time as a string.
+ * @return String containing the current date and time.
+ */
+std::string getCurrentDateTime(); // вернет строку с текущей датой и временем
+
+
+
+
+// ===== /home/yanbatytskiy/SynologyDrive/CPP/Linux/ChatBot/src/system/system_function.cpp =====
+#include "chat/chat.h"
+#include "exception/validation_exception.h"
+#include "message/message_content_struct.h"
+#include "system/chat_system.h"
+#include "menu/0_init_system.h"
+#include "system/date_time_utils.h"
+#include <algorithm>
+#include <ctime>
+#include <iostream>
+#include <limits>
+#include <stdexcept>
+#include <string>
+
+/**
+ * @brief Converts a string to an integer.
+ * @param str The string to convert.
+ * @return The converted integer value.
+ * @throws NonDigitalCharacterException If the string contains non-numeric characters.
+ * @throws IndexOutOfRangeException If the value exceeds the integer range.
+ */
+int parseGetlineToInt(const std::string &str) { // конвертация из string в int
+  try {
+    long long value = std::stoll(str);
+
+    if (value < std::numeric_limits<int>::min() || value > std::numeric_limits<int>::max()) {
+      throw std::out_of_range("value exceeds int range");
+    }
+    return static_cast<int>(value);
+
+  } catch (const std::invalid_argument &) {
+    throw NonDigitalCharacterException();
+  } catch (const std::out_of_range &) {
+    throw IndexOutOfRangeException(str);
+  }
+}
+
+/**
+ * @brief Converts a string to a size_t.
+ * @param str The string to convert.
+ * @return The converted size_t value.
+ * @throws NonDigitalCharacterException If the string contains non-numeric characters.
+ * @throws IndexOutOfRangeException If the value exceeds the size_t range.
+ */
+std::size_t parseGetlineToSizeT(const std::string &str) { // конвертация из string в size_t
+  try {
+    unsigned long long value = std::stoull(str);
+
+    if (value > static_cast<unsigned long long>(std::numeric_limits<int>::max())) {
+      throw std::out_of_range("value exceeds size_t range");
+    }
+    return static_cast<std::size_t>(value);
+
+  } catch (const std::invalid_argument &) {
+    throw NonDigitalCharacterException();
+  } catch (const std::out_of_range &) {
+    throw IndexOutOfRangeException(str);
+  }
+}
+
+/**
+ * @brief Updates the last read message index for the sender in a chat.
+ * @param user Shared pointer to the user (sender).
+ * @param chat Shared pointer to the chat.
+ */
+void changeLastReadIndexForSender(const std::shared_ptr<User> &user, const std::shared_ptr<Chat> &chat) {
+
+  chat->updateLastReadMessageIndex(user, chat->getMessages().size());
+}
+
+/**
+ * @brief Adds a message to a chat using initial data.
+ * @param initDataArray Structure containing message data.
+ * @param chat Shared pointer to the chat.
+ * @throws UnknownException If the sender is null.
+ */
+void addMessageToChat(const InitDataArray &initDataArray, std::shared_ptr<Chat> &chat) {
+
+  std::vector<std::shared_ptr<IMessageContent>> iMessageContent;
+  TextContent textContent(initDataArray._messageText);
+  MessageContent<TextContent> messageContentText(textContent);
+  iMessageContent.push_back(std::make_shared<MessageContent<TextContent>>(messageContentText));
+
+  try {
+    if (!initDataArray._sender) {
+      throw UnknownException(" Отправитель отсутствует. Сообщение не будет создано. addMessageToChat");
+    } else {
+      Message message(iMessageContent, initDataArray._sender, initDataArray._timeStamp);
+
+      chat->addMessage(std::make_shared<Message>(message));
+
+      changeLastReadIndexForSender(initDataArray._sender, chat);
+    };
+  } catch (const ValidationException &ex) {
+    std::cout << " ! " << ex.what() << std::endl;
+  }
+}
+
+/**
+ * @brief Prompts the user to input a new message for a chat.
+ * @param chatSystem Reference to the chat system.
+ * @param chat Shared pointer to the chat.
+ * @return True if a message was successfully added, false if the user cancels.
+ * @throws EmptyInputException If the input is empty.
+ */
+bool inputNewMessage(ChatSystem &chatSystem, std::shared_ptr<Chat> chat) {
+  std::cout << std::endl << "Наберите новое сообщение либо 0 для выхода:" << std::endl;
+  std::string inputData;
+
+  while (true) {
+    try {
+      std::getline(std::cin, inputData);
+
+      if (inputData.empty())
+        throw EmptyInputException();
+
+      if (inputData == "0")
+        return false;
+
+      std::vector<std::shared_ptr<User>> recipients;
+      for (const auto &participant : chat->getParticipants()) {
+        auto user_ptr = participant._user.lock();
+        if (user_ptr) {
+          if (user_ptr != chatSystem.getActiveUser())
+            recipients.push_back(user_ptr);
+        }
+      }
+
+      InitDataArray newMessageStruct(inputData, getCurrentDateTime(), chatSystem.getActiveUser(), recipients);
+      addMessageToChat(newMessageStruct, chat);
+      return true;
+    } // try
+    catch (const ValidationException &ex) {
+      std::cout << " ! " << ex.what() << " Попробуйте еще раз." << std::endl;
+      continue;
+    }
+  } // while
+}
+
+/**
+ * @brief Converts a string to lowercase.
+ * @param str The input string.
+ * @return The lowercase version of the input string.
+ */
+std::string TextToLower(const std::string &str) {
+  std::string result = str;
+
+  // приводим всех к нижнему регистру
+  std::transform(result.begin(), result.end(), result.begin(), [](unsigned char c) { return std::tolower(c); });
+  return result;
+}
+
+
+
+
+// ===== /home/yanbatytskiy/SynologyDrive/CPP/Linux/ChatBot/src/system/system_function.h =====
+#pragma once
+#include "message/message_content_struct.h"
+#include "system/chat_system.h"
+#include <alloca.h>
+#include <string>
+
+/**
+ * @brief Enum class defining message target types.
+ */
+enum class MessageTarget {One, Several, All};
+
+/**
+ * @brief Converts a string to an integer.
+ * @param str The string to convert.
+ * @return The converted integer value.
+ */
+int parseGetlineToInt(const std::string &str); // конвертация из string в int
+
+/**
+ * @brief Converts a string to a size_t.
+ * @param str The string to convert.
+ * @return The converted size_t value.
+ */
+std::size_t parseGetlineToSizeT(const std::string &str); // конвертация из string в size_t
+
+/**
+ * @brief Updates the last read message index for the sender in a chat.
+ * @param user Shared pointer to the user (sender).
+ * @param chat Shared pointer to the chat.
+ */
+void changeLastReadIndexForSender(const std::shared_ptr<User> &user, const std::shared_ptr<Chat> &chat);
+
+/**
+ * @brief Adds a message to a chat using initial data.
+ * @param initDataArray Structure containing message data.
+ * @param chat Shared pointer to the chat.
+ */
+void addMessageToChat(const InitDataArray &initDataArray, std::shared_ptr<Chat> &chat);
+
+/**
+ * @brief Prompts the user to input a new message for a chat.
+ * @param chatSystem Reference to the chat system.
+ * @param chat Shared pointer to the chat.
+ * @return True if a message was successfully added, false otherwise.
+ */
+bool inputNewMessage(ChatSystem &chatSystem, std::shared_ptr<Chat> chat);
+
+/**
+ * @brief Converts a string to lowercase.
+ * @param str The input string.
+ * @return The lowercase version of the input string.
+ */
+std::string TextToLower(const std::string &str); // приведение к нижнему регистру
+
+
+
+
+// ===== /home/yanbatytskiy/SynologyDrive/CPP/Linux/ChatBot/src/user/user_chat_list.cpp =====
+#include "user/user_chat_list.h"
+#include "user/user.h"
+
+/**
+ * @brief Constructor for the user's chat list.
+ * @param owner Shared pointer to the user who owns the chat list.
+ */
+UserChatList::UserChatList(const std::shared_ptr<User> &owner) : _owner(owner){};
+
+/**
+ * @brief Gets the number of chats in the list.
+ * @return The count of chats.
+ */
+std::size_t UserChatList::getChatCount() const { return _chatCount; };
+
+/**
+ * @brief Gets the owner of the chat list.
+ * @return Weak pointer to the user who owns the chat list.
+ */
+std::weak_ptr<User> UserChatList::getOwner() const { return _owner; }
+
+/**
+ * @brief Gets the list of chats for the user.
+ * @return Vector of weak pointers to chats.
+ */
+std::vector<std::weak_ptr<Chat>> UserChatList::getChatFromList() const { return _chatList; }
+
+/**
+ * @brief Sets the count of chats in the list.
+ * @param chatCount The number of chats to set.
+ */
+void UserChatList::setChatCount(std::size_t chatCount) { _chatCount = chatCount; };
+
+/**
+ * @brief Adds a chat to the user's chat list.
+ * @param chat Weak pointer to the chat to add.
+ */
+void UserChatList::addChat(const std::weak_ptr<Chat> &chat) {
+  _chatList.push_back(chat);
+  ++_chatCount;
+}
+
+
+// ===== /home/yanbatytskiy/SynologyDrive/CPP/Linux/ChatBot/src/user/user_chat_list.h =====
+#pragma once
+
+#include "chat/chat.h"
+#include <memory>
+#include <vector>
+
+class User;
+
+/**
+ * @brief Class for storing a user's chat list and their read states.
+ */
+class UserChatList {
+private:
+  std::weak_ptr<User> _owner;                 ///< Owner of the chat list (user).
+  std::vector<std::weak_ptr<Chat>> _chatList; ///< List of user's chats.
+  std::size_t _chatCount;                     ///< Number of chats in the list.
+
+public:
+  /**
+   * @brief Constructor for the user's chat list.
+   * @param owner Shared pointer to the user who owns the chat list.
+   */
+  UserChatList(const std::shared_ptr<User> &owner);
+
+  /**
+   * @brief Default destructor.
+   */
+  ~UserChatList() = default;
+
+  /**
+   * @brief Gets the number of chats in the list.
+   * @return The count of chats.
+   */
+  std::size_t getChatCount() const;
+
+  /**
+   * @brief Gets the owner of the chat list.
+   * @return Weak pointer to the user who owns the chat list.
+   */
+  std::weak_ptr<User> getOwner() const;
+
+  /**
+   * @brief Gets the list of chats for the user.
+   * @return Vector of weak pointers to chats.
+   */
+  std::vector<std::weak_ptr<Chat>> getChatFromList() const;
+
+  /**
+   * @brief Sets the count of chats in the list.
+   * @param chatCount The number of chats to set.
+   */
+  void setChatCount(std::size_t chatCount);
+
+  /**
+   * @brief Adds a chat to the user's chat list.
+   * @param chat Weak pointer to the chat to add.
+   */
+  void addChat(const std::weak_ptr<Chat> &chat);
+
+  // --- Дополнительные методы ---
+};
+
+
+// ===== /home/yanbatytskiy/SynologyDrive/CPP/Linux/ChatBot/src/user/user.cpp =====
+#include "user/user.h"
+#include "exception/validation_exception.h"
+#include "user/user_chat_list.h"
+#include <cstddef>
+#include <iostream>
+#include <memory>
+#include <ostream>
+
+/**
+ * @brief Constructor for User.
+ * @param login User's login.
+ * @param userName User's display name.
+ * @param password User's password.
+ */
+User::User(const std::string &login, const std::string &userName, const std::string &password)
+    : _login(login), _userName(userName), _password(password) {}
+
+/**
+ * @brief Assigns a chat list to the user.
+ * @param userChats Shared pointer to the user's chat list.
+ */
+void User::createChatList(const std::shared_ptr<UserChatList> &userChats) { _userChats = userChats; }
+
+/**
+ * @brief Gets the user's login.
+ * @return The user's login string.
+ */
+std::string User::getLogin() const { return _login; }
+
+/**
+ * @brief Gets the user's display name.
+ * @return The user's display name string.
+ */
+std::string User::getUserName() const { return _userName; }
+
+/**
+ * @brief Gets the user's password.
+ * @return The user's password string.
+ */
+std::string User::getPassword() const { return _password; }
+
+/**
+ * @brief Gets the user's chat list.
+ * @return Shared pointer to the user's chat list.
+ */
+std::shared_ptr<UserChatList> User::getUserChatList() const { return _userChats; }
+
+/**
+ * @brief Sets the user's login.
+ * @param login The new login string.
+ */
+void User::setLogin(const std::string &login) { _login = login; }
+
+/**
+ * @brief Sets the user's display name.
+ * @param userName The new display name string.
+ */
+void User::setUserName(const std::string &userName) { _userName = userName; }
+
+/**
+ * @brief Sets the user's password.
+ * @param password The new password string.
+ */
+void User::setPassword(const std::string &password) { _password = password; }
+
+/**
+ * @brief Checks if the provided password matches the user's password.
+ * @param password The password to check.
+ * @return True if the password matches, false otherwise.
+ */
+bool User::checkPassword(const std::string &password) const { return (password == _password); }
+
+/**
+ * @brief Checks if the provided login matches the user's login.
+ * @param login The login to check.
+ * @return True if the login matches, false otherwise.
+ */
+bool User::checkLogin(const std::string &login) const { return (_login == login); }
+
+/**
+ * @brief Displays the user's data.
+ * @details Prints the user's name, login, and password.
+ */
+void User::showUserData() const {
+  std::cout << "Name: " << _userName << ", Login: " << _login << ", Password: " << _password << std::endl;
+}
+
+/**
+ * @brief Prints the user's chat list.
+ * @param user Shared pointer to the user whose chat list is to be printed.
+ * @throws UnknownException If the message vector of a chat is empty.
+ * @details Displays each chat with participant details, last message timestamp, and unread message count.
+ * @note Needs to handle deleted users in the list and display unread message counts (marked as TODO).
+ */
+void User::printChatList(const std::shared_ptr<User> &user) const {
+  // ДОДЕЛАТЬ ВЫВОД УДАЛЕННОГО ПОЛЬЗОВАТЕЛЯ В СПИСКЕ а также количество новых сообщений в списке
+
+  std::string date_stamp;
+
+  // достаем чатлист
+  const auto &chatList = user->getUserChatList()->getChatFromList();
+
+  if (chatList.empty()) {
+    std::cout << "У пользователя " << user->_userName << " нет чатов." << std::endl;
+    return;
+  }
+  std::cout << std::endl
+            << "Всего чатов = " << user->getUserChatList()->getChatCount() << ". Список чатов пользователя "
+            << user->_userName << " :" << std::endl;
+
+  std::size_t index = 1;
+  std::size_t activeUserMessageCount;
+  std::size_t totalMessages;
+
+  // перебираем чаты в списке
+  for (const auto &weakChat : chatList) {
+    if (auto chat_ptr = weakChat.lock()) {
+
+      std::cout << std::endl;
+      std::cout << index << ". ";
+
+      const auto &messages = chat_ptr->getMessages();
+      try {
+        if (!messages.empty()) {
+          totalMessages = messages.size();
+          date_stamp = messages.back()->getTimeStamp();
+        } else
+          throw UnknownException("Вектор сообщений пуст. User::printChatList");
+      } catch (const ValidationException &ex) {
+        std::cout << " ! " << ex.what() << std::endl;
+      }
+      // перебираем участников чата
+      std::cout << "Имя/Логин: ";
+      for (const auto &participant : chat_ptr->getParticipants()) {
+        auto user_ptr = participant._user.lock();
+        if (user_ptr) {
+          if (user_ptr != user) {
+            std::cout << user_ptr->getUserName() << "/" << user_ptr->getLogin() << "; ";
+          } else {
+            activeUserMessageCount = participant._lastReadMessageIndex;
+          };
+        } else {
+          std::cout << "удал. пользоыватель";
+        }
+      }
+    } else {
+      //   std::cout << "Чат удален." << std::endl;
+    }
+    ++index;
+
+    // выводим на печать дату и время последнего сообщения
+    std::cout << "Последнее сообщение - " << date_stamp << ". ";
+
+    // вывод на печать количества новых сообщений
+    if (totalMessages > activeUserMessageCount)
+      std::cout << "новых сообщений - " << totalMessages - activeUserMessageCount;
+  }
+
+  std::cout << std::endl;
+}
+
+
+// ===== /home/yanbatytskiy/SynologyDrive/CPP/Linux/ChatBot/src/user/user.h =====
+#pragma once
+
+#include <memory>
+#include <string>
+
+class UserChatList;
+
+/**
+ * @brief Class representing a user in the chat system.
+ */
+class User {
+private:
+  std::string _login;                       ///< User login.
+  std::string _userName;                    ///< User's display name.
+  std::string _password;                    ///< User password.
+  std::shared_ptr<UserChatList> _userChats; ///< User's chat list.
+
+public:
+  /**
+   * @brief Constructor for User.
+   * @param login User's login.
+   * @param userName User's display name.
+   * @param password User's password.
+   */
+  User(const std::string &login, const std::string &userName, const std::string &password);
+
+  /**
+   * @brief Default destructor.
+   */
+  ~User() = default;
+
+  /**
+   * @brief Assigns a chat list to the user.
+   * @param chats Shared pointer to the user's chat list.
+   */
+  void createChatList(const std::shared_ptr<UserChatList> &chats);
+
+  /**
+   * @brief Gets the user's login.
+   * @return The user's login string.
+   */
+  std::string getLogin() const;
+
+  /**
+   * @brief Gets the user's display name.
+   * @return The user's display name string.
+   */
+  std::string getUserName() const;
+
+  /**
+   * @brief Gets the user's password.
+   * @return The user's password string.
+   */
+  std::string getPassword() const;
+
+  /**
+   * @brief Gets the user's chat list.
+   * @return Shared pointer to the user's chat list.
+   */
+  std::shared_ptr<UserChatList> getUserChatList() const;
+
+  /**
+   * @brief Sets the user's login.
+   * @param login The new login string.
+   */
+  void setLogin(const std::string &login);
+
+  /**
+   * @brief Sets the user's display name.
+   * @param userName The new display name string.
+   */
+  void setUserName(const std::string &userName);
+
+  /**
+   * @brief Sets the user's password.
+   * @param password The new password string.
+   */
+  void setPassword(const std::string &password);
+
+  /**
+   * @brief Checks if the provided password matches the user's password.
+   * @param password The password to check.
+   * @return True if the password matches, false otherwise.
+   */
+  bool checkPassword(const std::string &password) const;
+
+  /**
+   * @brief Checks if the provided login matches the user's login.
+   * @param login The login to check.
+   * @return True if the login matches, false otherwise.
+   */
+  bool checkLogin(const std::string &login) const;
+
+  /**
+   * @brief Displays the user's data.
+   * @details Prints the user's login, name, and other relevant information.
+   */
+  void showUserData() const;
+
+  /**
+   * @brief Prints the user's chat list.
+   * @param user Shared pointer to the user whose chat list is to be printed.
+   */
+  void printChatList(const std::shared_ptr<User> &user) const;
+};
+
+
+
+

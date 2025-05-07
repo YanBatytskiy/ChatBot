@@ -2,10 +2,8 @@
 #include "exception/validation_exception.h"
 #include "message/message_content_struct.h"
 #include "system/chat_system.h"
-
 #include "menu/0_init_system.h"
 #include "system/date_time_utils.h"
-
 #include <algorithm>
 #include <ctime>
 #include <iostream>
@@ -13,6 +11,13 @@
 #include <stdexcept>
 #include <string>
 
+/**
+ * @brief Converts a string to an integer.
+ * @param str The string to convert.
+ * @return The converted integer value.
+ * @throws NonDigitalCharacterException If the string contains non-numeric characters.
+ * @throws IndexOutOfRangeException If the value exceeds the integer range.
+ */
 int parseGetlineToInt(const std::string &str) { // конвертация из string в int
   try {
     long long value = std::stoll(str);
@@ -29,6 +34,13 @@ int parseGetlineToInt(const std::string &str) { // конвертация из s
   }
 }
 
+/**
+ * @brief Converts a string to a size_t.
+ * @param str The string to convert.
+ * @return The converted size_t value.
+ * @throws NonDigitalCharacterException If the string contains non-numeric characters.
+ * @throws IndexOutOfRangeException If the value exceeds the size_t range.
+ */
 std::size_t parseGetlineToSizeT(const std::string &str) { // конвертация из string в size_t
   try {
     unsigned long long value = std::stoull(str);
@@ -45,11 +57,22 @@ std::size_t parseGetlineToSizeT(const std::string &str) { // конвертац�
   }
 }
 
+/**
+ * @brief Updates the last read message index for the sender in a chat.
+ * @param user Shared pointer to the user (sender).
+ * @param chat Shared pointer to the chat.
+ */
 void changeLastReadIndexForSender(const std::shared_ptr<User> &user, const std::shared_ptr<Chat> &chat) {
 
   chat->updateLastReadMessageIndex(user, chat->getMessages().size());
 }
 
+/**
+ * @brief Adds a message to a chat using initial data.
+ * @param initDataArray Structure containing message data.
+ * @param chat Shared pointer to the chat.
+ * @throws UnknownException If the sender is null.
+ */
 void addMessageToChat(const InitDataArray &initDataArray, std::shared_ptr<Chat> &chat) {
 
   std::vector<std::shared_ptr<IMessageContent>> iMessageContent;
@@ -72,6 +95,13 @@ void addMessageToChat(const InitDataArray &initDataArray, std::shared_ptr<Chat> 
   }
 }
 
+/**
+ * @brief Prompts the user to input a new message for a chat.
+ * @param chatSystem Reference to the chat system.
+ * @param chat Shared pointer to the chat.
+ * @return True if a message was successfully added, false if the user cancels.
+ * @throws EmptyInputException If the input is empty.
+ */
 bool inputNewMessage(ChatSystem &chatSystem, std::shared_ptr<Chat> chat) {
   std::cout << std::endl << "Наберите новое сообщение либо 0 для выхода:" << std::endl;
   std::string inputData;
@@ -106,6 +136,11 @@ bool inputNewMessage(ChatSystem &chatSystem, std::shared_ptr<Chat> chat) {
   } // while
 }
 
+/**
+ * @brief Converts a string to lowercase.
+ * @param str The input string.
+ * @return The lowercase version of the input string.
+ */
 std::string TextToLower(const std::string &str) {
   std::string result = str;
 
@@ -113,3 +148,4 @@ std::string TextToLower(const std::string &str) {
   std::transform(result.begin(), result.end(), result.begin(), [](unsigned char c) { return std::tolower(c); });
   return result;
 }
+

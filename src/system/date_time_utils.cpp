@@ -1,6 +1,11 @@
 #include "date_time_utils.h"
 #include <ctime>
 
+/**
+ * @brief Retrieves the current date and time as a string.
+ * @return String in the format "YYYY-MM-DD, HH:MM:SS".
+ * @details Uses local time to format the current date and time.
+ */
 std::string getCurrentDateTime() { // вернет строку с текущей датой и временем
 
   time_t mytime = time(NULL);
@@ -14,3 +19,4 @@ std::string getCurrentDateTime() { // вернет строку с текуще�
 
   return std::string(date_stamp) + ", " + time_stamp;
 }
+

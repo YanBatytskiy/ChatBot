@@ -4,25 +4,47 @@
 #include <iostream>
 #include <memory>
 
-// constructors
+/**
+ * @brief Constructor for Message.
+ * @param content Vector of shared pointers to message content.
+ * @param sender Weak pointer to the sender user.
+ * @param timeStamp Timestamp of the message.
+ */
 Message::Message(const std::vector<std::shared_ptr<IMessageContent>> &content, const std::weak_ptr<User> &sender,
                  const std::string &timeStamp)
     : _content(content), _sender(sender), _time_stamp(timeStamp) {}
 
-// getters
-// get content of the message
+/**
+ * @brief Gets the content of the message.
+ * @return Const reference to the vector of message content.
+ */
 const std::vector<std::shared_ptr<IMessageContent>> &Message::getContent() const { return _content; }
 
-// get Sender of the message
+/**
+ * @brief Gets the sender of the message.
+ * @return Weak pointer to the sender user.
+ */
 std::weak_ptr<User> Message::getSender() const { return _sender; }
 
-// get timeStamp of the message
+/**
+ * @brief Gets the timestamp of the message.
+ * @return Const reference to the timestamp string.
+ */
 const std::string &Message::getTimeStamp() const { return _time_stamp; }
 
-// setters
-// add content to the message
+/**
+ * @brief Adds content to the message.
+ * @param content Shared pointer to the content to be added.
+ */
 void Message::addContent(const std::shared_ptr<IMessageContent> &content) { _content.push_back(content); }
 
+/**
+ * @brief Prints the message for a specific user.
+ * @param currentUser Shared pointer to the user viewing the message.
+ * @details Displays the message with formatting based on whether it is incoming or outgoing, including sender details
+ * and content.
+ * @note Contains a typo in the parameter name (¤tUser).
+ */
 void Message::printMessage(const std::shared_ptr<User> &currentUser) {
   auto sender = _sender.lock();
   if (!sender)
@@ -38,7 +60,8 @@ void Message::printMessage(const std::shared_ptr<User> &currentUser) {
     } else {
       std::cout << "user уничтожен " << sender_ptr->getLogin() << std::endl;
     }
-    std::cout << "     -> Входящее от Логин/Имя" << sender_ptr->getLogin() << "/" << sender_ptr->getUserName() << "    " << _time_stamp << std::endl;
+    std::cout << "     -> Входящее от Логин/Имя" << sender_ptr->getLogin() << "/" << sender_ptr->getUserName() << "    "
+              << _time_stamp << std::endl;
 
     for (const auto &content : _content) {
       if (auto textContent = std::dynamic_pointer_cast<MessageContent<TextContent>>(content)) {
@@ -63,9 +86,6 @@ void Message::printMessage(const std::shared_ptr<User> &currentUser) {
 
   std::cout << "\033[0m";
 };
-//
-//
-//
 
 // delete message will be realized further
 

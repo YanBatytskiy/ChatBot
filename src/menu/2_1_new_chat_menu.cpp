@@ -11,6 +11,18 @@
 #include <string>
 #include <vector>
 
+/**
+ * @brief Creates a new chat by selecting participants.
+ * @param chatSystem Reference to the chat system.
+ * @param chat Shared pointer to the chat being created.
+ * @param activeUserIndex Index of the active user.
+ * @param target Target type for the message (e.g., individual, several, or all).
+ * @throws EmptyInputException If input is empty.
+ * @throws InvalidCharacterException If input contains invalid characters.
+ * @throws UserNotFoundException If no users are found for the search query.
+ * @throws IndexOutOfRangeException If selected index is out of range.
+ * @details Handles user selection for adding participants to a new chat based on the target type.
+ */
 void LoginMenu_1NewChatMakeParticipants(ChatSystem &chatSystem, std::shared_ptr<Chat> &chat,
                                         std::size_t activeUserIndex,
                                         MessageTarget target) { // создение нового сообщения путем выбора пользователей
@@ -148,7 +160,7 @@ void LoginMenu_1NewChatMakeParticipants(ChatSystem &chatSystem, std::shared_ptr<
             throw InvalidCharacterException(exactChar);
 
         // проверки
-        std::cout << activeUserIndex << std::endl;
+        // std::cout << activeUserIndex << std::endl;
 
         // добавляем в конец запятую
         inputData.push_back(',');
@@ -189,15 +201,15 @@ void LoginMenu_1NewChatMakeParticipants(ChatSystem &chatSystem, std::shared_ptr<
         } while (!inputData.empty());
 
         // проверки временная
-        std::cout << std::endl;
-        for (const auto &rep : recipientIndex)
-          std::cout << rep << ", ";
+        // std::cout << std::endl;
+        // for (const auto &rep : recipientIndex)
+        //   std::cout << rep << ", ";
 
         // проверки временная
-        std::cout << std::endl;
-        for (std::size_t i = 1; i <= recipientIndex.size(); ++i) {
-          std::cout << chatSystem.getUsers()[recipientIndex[i - 1]]->getLogin() << ", ";
-        }
+        // std::cout << std::endl;
+        // for (std::size_t i = 1; i <= recipientIndex.size(); ++i) {
+        //   std::cout << chatSystem.getUsers()[recipientIndex[i - 1]]->getLogin() << ", ";
+        // }
 
         // заполняем вектор участников
         for (const auto &recipient : recipientIndex) {
@@ -205,11 +217,11 @@ void LoginMenu_1NewChatMakeParticipants(ChatSystem &chatSystem, std::shared_ptr<
         }
 
         // проверки
-        std::cout << "Участники чата: " << std::endl;
-        for (const auto &user : chat->getParticipants()) {
-          auto user_ptr = user._user.lock();
-          std::cout << user_ptr->getLogin() << " ака " << user_ptr->getUserName() << std::endl;
-        }
+        // std::cout << "Участники чата: " << std::endl;
+        // for (const auto &user : chat->getParticipants()) {
+        //   auto user_ptr = user._user.lock();
+        //   std::cout << user_ptr->getLogin() << " ака " << user_ptr->getUserName() << std::endl;
+        // }
       } // try
       catch (const ValidationException &ex) {
         std::cout << " ! " << ex.what() << " Попробуйте еще раз." << std::endl;
@@ -226,16 +238,22 @@ void LoginMenu_1NewChatMakeParticipants(ChatSystem &chatSystem, std::shared_ptr<
         chat->addParticipant(user);
       }
 
-    return;
-    break; // case All
+    return;  // case All
   }
 
   } // switch
 }
-//
-//
-//
-// общая функция для отправки сообщения в новый чат тремя способами
+
+/**
+ * @brief Creates and sends a message to a new chat.
+ * @param chatSystem Reference to the chat system.
+ * @param chat Shared pointer to the new chat.
+ * @param activeUserIndex Index of the active user.
+ * @param target Target type for the message (e.g., individual, several, or all).
+ * @throws BadWeakException If a weak_ptr cannot be locked.
+ * @throws ValidationException If message input fails validation.
+ * @details Manages participant selection, message input, and chat integration into the system.
+ */
 void CreateAndSendNewChat(ChatSystem &chatSystem, std::shared_ptr<Chat> &chat, std::size_t activeUserIndex,
                           MessageTarget target) {
 
@@ -268,7 +286,7 @@ void CreateAndSendNewChat(ChatSystem &chatSystem, std::shared_ptr<Chat> &chat, s
         ++unReadCount;
 
         // проверки
-        chat->printChat(chatSystem.getActiveUser());
+        // chat->printChat(chatSystem.getActiveUser());
         // std::cout << std::endl;
       }; // else
     } // try
@@ -277,9 +295,14 @@ void CreateAndSendNewChat(ChatSystem &chatSystem, std::shared_ptr<Chat> &chat, s
     }
   } // while case 2
 }
-//
-//
-//
+
+/**
+ * @brief Initiates the creation of a new chat.
+ * @param chatSystem Reference to the chat system.
+ * @throws EmptyInputException If input is empty.
+ * @throws IndexOutOfRangeException If input is not 0, 1, 2, or 3.
+ * @details Provides a menu for selecting the type of new chat (one user, several users, or all users).
+ */
 void LoginMenu_1NewChat(ChatSystem &chatSystem) { // создание нового сообщения
 
   std::string userChoice;

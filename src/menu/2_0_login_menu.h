@@ -1,42 +1,28 @@
-/**
- * @file auth_menu.h
- * @brief Заголовочный файл, содержащий объявления функций запуска системы и
- * авторизации.
- *
- * Используется в основном интерфейсе ChatBot для отображения меню входа и
- * регистрации.
- */
-
 #pragma once
 #include "system/chat_system.h"
 
 /**
- * @brief Отображает главное меню авторизации и получает выбор пользователя.
- *
- * Функция выводит текстовое меню в консоль, обрабатывает ввод пользователя
- * и возвращает соответствующий код действия.
- *
- * @return short Значение, соответствующее выбору пользователя:
- * - 1 — Регистрация пользователя
- * - 2 — Вход в Чат
- * - 0 — Завершение программы
+ * @brief Displays the main authorization menu.
+ * @return The user's menu selection as a short integer.
  */
-short authMenu(); // вывод главного меню
+short authMenu();
 
 /**
- * @brief Отображает главное меню авторизации и получает выбор пользователя.
- *
- * Функция выводит текстовое меню в консоль, обрабатывает ввод пользователя
- * и возвращает соответствующий код действия.
- *
- * @return short Значение, соответствующее выбору пользователя:
- * - 1 — Регистрация пользователя
- * - 2 — Вход в Чат
- * - 0 — Завершение программы
+ * @brief Handles the login menu flow and user input.
+ * @param chatSystem Reference to the chat system.
  */
+void loginMenuChoice(ChatSystem &chatSystem);
 
-void loginMenuChoice(ChatSystem &chatSystem);   // вывод главного меню
-
+// /**
+//  * @brief Opens the interface for the specified chat from the chat list.
+//  * @param chatSystem Reference to the chat system.
+//  * @param chat Shared pointer to the chat to open.
+//  * @param Index Index of the chat in the list.
+//  */
 // void menuListOpenChat1(ChatSystem &chatSystem, const std::shared_ptr<Chat> &chat, std::size_t Index);
 
+// /**
+//  * @brief Opens the interface for searching and selecting a chat.
+//  * @param chatSystem Reference to the chat system.
+//  */
 // void menuListFindChat2(ChatSystem &chatSystem);

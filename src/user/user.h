@@ -1,11 +1,3 @@
-/**
- * @file user.h
- * @brief Заголовочный файл с описанием класса User для системы ChatBot.
- *
- * Класс User хранит информацию о пользователе, его логине, пароле,
- * отображаемом имени и списке чатов пользователя.
- */
-
 #pragma once
 
 #include <memory>
@@ -14,108 +6,101 @@
 class UserChatList;
 
 /**
- * @brief Класс, представляющий пользователя в системе чатов.
+ * @brief Class representing a user in the chat system.
  */
 class User {
 private:
-  std::string _login;                       ///< Логин пользователя
-  std::string _userName;                    ///< Отображаемое имя пользователя
-  std::string _password;                    ///< Пароль пользователя
-  std::shared_ptr<UserChatList> _userChats; ///< Список чатов пользователя
+  std::string _login;                       ///< User login.
+  std::string _userName;                    ///< User's display name.
+  std::string _password;                    ///< User password.
+  std::shared_ptr<UserChatList> _userChats; ///< User's chat list.
 
 public:
   /**
-   * @brief Конструктор пользователя.
-   *
-   * @param login Логин пользователя
-   * @param userName Имя пользователя для отображения
-   * @param password Пароль пользователя
+   * @brief Constructor for User.
+   * @param login User's login.
+   * @param userName User's display name.
+   * @param password User's password.
    */
   User(const std::string &login, const std::string &userName, const std::string &password);
 
-  /// @brief Деструктор пользователя по умолчанию.
+  /**
+   * @brief Default destructor.
+   */
   ~User() = default;
 
   /**
-   * @brief Связывает пользователя со списком его чатов.
-   *
-   * @param chats Указатель на объект списка чатов
+   * @brief Assigns a chat list to the user.
+   * @param chats Shared pointer to the user's chat list.
    */
   void createChatList(const std::shared_ptr<UserChatList> &chats);
 
-  // --- Геттеры ---
-
   /**
-   * @brief Получить логин пользователя..addChat(chat_ptr)
-   * @return Логин
+   * @brief Gets the user's login.
+   * @return The user's login string.
    */
   std::string getLogin() const;
 
   /**
-   * @brief Получить отображаемое имя пользователя.
-   * @return Имя пользователя
+   * @brief Gets the user's display name.
+   * @return The user's display name string.
    */
   std::string getUserName() const;
 
   /**
-   * @brief Получить пароль пользователя.
-   * @return Пароль
+   * @brief Gets the user's password.
+   * @return The user's password string.
    */
   std::string getPassword() const;
 
   /**
-   * @brief Получить список чатов пользователя.
-   * @return Указатель на список чатов
+   * @brief Gets the user's chat list.
+   * @return Shared pointer to the user's chat list.
    */
   std::shared_ptr<UserChatList> getUserChatList() const;
 
-  // --- Сеттеры ---
-
   /**
-   * @brief Установить новый логин пользователя.
-   * @param login Новый логин
+   * @brief Sets the user's login.
+   * @param login The new login string.
    */
   void setLogin(const std::string &login);
 
   /**
-   * @brief Установить новое имя пользователя.
-   * @param userName Новое имя
+   * @brief Sets the user's display name.
+   * @param userName The new display name string.
    */
   void setUserName(const std::string &userName);
 
   /**
-   * @brief Установить новый пароль пользователя.
-   * @param password Новый пароль
+   * @brief Sets the user's password.
+   * @param password The new password string.
    */
   void setPassword(const std::string &password);
 
-  // --- Дополнительные методы ---
-
   /**
-   * @brief Проверяет соответствие пароля.
-   * @param password Введённый пароль
-   * @return true если пароль совпадает
+   * @brief Checks if the provided password matches the user's password.
+   * @param password The password to check.
+   * @return True if the password matches, false otherwise.
    */
   bool checkPassword(const std::string &password) const;
 
   /**
-   * @brief Проверяет соответствие логина.
-   * @param login Введённый логин
-   * @return true если логин совпадает
+   * @brief Checks if the provided login matches the user's login.
+   * @param login The login to check.
+   * @return True if the login matches, false otherwise.
    */
   bool checkLogin(const std::string &login) const;
 
   /**
-   * @brief Выводит информацию о пользователе.
+   * @brief Displays the user's data.
+   * @details Prints the user's login, name, and other relevant information.
    */
   void showUserData() const;
 
   /**
-   * @brief Печатает список чатов пользователя.
-   *
-   * @param user Ссылка на пользователя, для которого печатается список чатов
+   * @brief Prints the user's chat list.
+   * @param user Shared pointer to the user whose chat list is to be printed.
    */
   void printChatList(const std::shared_ptr<User> &user) const;
+};
 
-
-  };
